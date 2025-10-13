@@ -1703,6 +1703,159 @@ router.post('/exchange-rates/test/update-usd-sell', asyncHandler(async (req, res
   }
 }));
 
+// Get FichasTecn with authentication
+router.post('/fichas-tecnicas', asyncHandler(async (req, res) => {
+  const { sessionId, filters = {}, companyDB = 'SBO_GT_STIA_TEST' } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({
+      success: false,
+      error: 'SessionId is required'
+    });
+  }
+
+  logger.info('SAP FichasTecn query requested', {
+    companyDB,
+    filters: Object.keys(filters),
+    requestId: req.requestId
+  });
+
+  try {
+    const headers = {
+      'Cookie': `B1SESSION=${sessionId}`,
+      'Content-Type': 'application/json'
+    };
+    if (companyDB) {
+      headers['CompanyDB'] = companyDB;
+    }
+
+    // Build query parameters
+    let queryParams = '';
+    if (Object.keys(filters).length > 0) {
+      const filterString = Object.entries(filters)
+        .map(([key, value]) => `${key} eq '${value}'`)
+        .join(' and ');
+      queryParams = `?$filter=${encodeURIComponent(filterString)}`;
+    }
+
+    const result = await sapService.callSAPAPI(`/b1s/v1/FichasTecn${queryParams}`, 'GET', null, headers);
+    
+    logger.info('SAP FichasTecn query completed', {
+      companyDB,
+      success: result.success,
+      statusCode: result.statusCode,
+      requestId: req.requestId
+    });
+
+    if (result.success) {
+      const data = result.data ? JSON.parse(result.data) : { value: [] };
+      res.json({
+        success: true,
+        data: data,
+        companyDB,
+        filters,
+        total: data.value?.length || 0,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(result.statusCode || 500).json({
+        success: false,
+        error: 'Failed to retrieve FichasTecn',
+        details: result.data,
+        statusCode: result.statusCode,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    logger.error('SAP FichasTecn query error', {
+      companyDB,
+      error: error.message,
+      requestId: req.requestId
+    });
+
+    res.status(500).json({
+      success: false,
+      error: error.userMessage || 'Failed to retrieve FichasTecn',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
+// Create new FichasTecn record
+router.post('/fichas-tecnicas/create', asyncHandler(async (req, res) => {
+  const { sessionId, fichaData, companyDB = 'SBO_GT_STIA_TEST' } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({
+      success: false,
+      error: 'SessionId is required'
+    });
+  }
+
+  if (!fichaData) {
+    return res.status(400).json({
+      success: false,
+      error: 'FichasTecn data is required'
+    });
+  }
+
+  logger.info('SAP FichasTecn creation requested', {
+    companyDB,
+    hasData: !!fichaData,
+    requestId: req.requestId
+  });
+
+  try {
+    const headers = {
+      'Cookie': `B1SESSION=${sessionId}`,
+      'Content-Type': 'application/json'
+    };
+    if (companyDB) {
+      headers['CompanyDB'] = companyDB;
+    }
+
+    const result = await sapService.callSAPAPI('/b1s/v1/FichasTecn', 'POST', fichaData, headers);
+    
+    logger.info('SAP FichasTecn creation completed', {
+      companyDB,
+      success: result.success,
+      statusCode: result.statusCode,
+      requestId: req.requestId
+    });
+
+    if (result.success) {
+      const data = result.data ? JSON.parse(result.data) : {};
+      res.json({
+        success: true,
+        data: data,
+        companyDB,
+        message: 'FichasTecn created successfully',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(result.statusCode || 500).json({
+        success: false,
+        error: 'Failed to create FichasTecn',
+        details: result.data,
+        statusCode: result.statusCode,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    logger.error('SAP FichasTecn creation error', {
+      companyDB,
+      error: error.message,
+      requestId: req.requestId
+    });
+
+    res.status(500).json({
+      success: false,
+      error: error.userMessage || 'Failed to create FichasTecn',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
 // Populate @FFF table in Guatemala test database
 router.post('/populate-fff', asyncHandler(async (req, res) => {
   const { sessionId, data, companyDB = 'SBO_GT_STIA_TEST' } = req.body;
