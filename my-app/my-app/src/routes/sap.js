@@ -3,6 +3,7 @@ const router = express.Router();
 const sapService = require('../services/sapService');
 const logger = require('../config/logger');
 const { asyncHandler } = require('../middleware/errorHandler');
+const redisManager = require('../config/redis');
 
 // Test SAP connection endpoint
 router.get('/test-connection', asyncHandler(async (req, res) => {
@@ -155,7 +156,8 @@ router.post('/login-all', asyncHandler(async (req, res) => {
   }
 
   const databases = [
-    'SBO_GT_STIA_PROD',  // Guatemala
+    'SBO_GT_STIA_PROD',  // Guatemala Production
+    'SBO_GT_STIA_TEST',  // Guatemala Test
     'SBO_HO_STIA_PROD',  // Honduras
     'SBO_PA_STIA_PROD',  // Panama
     'SBO_STIACR_PROD'    // Costa Rica
@@ -614,6 +616,89 @@ router.post('/diagnose-permissions', asyncHandler(async (req, res) => {
         'Confirm Items (OITM) table access in Service Layer',
         'Check user license includes API access'
       ]
+    },
+    timestamp: new Date().toISOString()
+  });
+}));
+
+// Test UDO endpoints to find correct FichasTecn table name
+router.post('/test-udos', asyncHandler(async (req, res) => {
+  const { sessionId, companyDB = 'SBO_GT_STIA_TEST' } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({
+      success: false,
+      error: 'SessionId is required'
+    });
+  }
+
+  logger.info('Testing UDO endpoints for FichasTecn', {
+    companyDB,
+    requestId: req.requestId
+  });
+
+  const headers = {
+    'Cookie': `B1SESSION=${sessionId}`,
+    'Content-Type': 'application/json'
+  };
+
+  // Test various possible UDO names for FichasTecn
+  const udoNamesToTest = [
+    'FichasTecn',
+    'U_FFF',
+    '@FFF',
+    'U_FICHAS_TECN',
+    'U_FICHA_TECNICA',
+    'FICHAS_TECNICAS',
+    'U_FICHASTECN'
+  ];
+
+  const testResults = {};
+
+  for (const udoName of udoNamesToTest) {
+    try {
+      logger.info(`Testing UDO endpoint: ${udoName}`, { requestId: req.requestId });
+      
+      const result = await sapService.callSAPAPI(`/b1s/v1/${udoName}?$top=1`, 'GET', null, headers);
+      
+      testResults[udoName] = {
+        accessible: result.success,
+        statusCode: result.statusCode,
+        error: result.success ? null : result.error,
+        hasData: result.success && result.data && result.data.value && result.data.value.length > 0
+      };
+
+      if (result.success) {
+        logger.info(`UDO endpoint ${udoName} is accessible`, { 
+          recordCount: result.data?.value?.length || 0,
+          requestId: req.requestId 
+        });
+      }
+    } catch (error) {
+      testResults[udoName] = {
+        accessible: false,
+        statusCode: 500,
+        error: error.message,
+        hasData: false
+      };
+    }
+  }
+
+  logger.info('UDO endpoint testing completed', {
+    companyDB,
+    accessibleUDOs: Object.keys(testResults).filter(name => testResults[name].accessible),
+    requestId: req.requestId
+  });
+
+  res.json({
+    success: true,
+    companyDB,
+    testResults,
+    recommendations: {
+      accessibleUDOs: Object.keys(testResults).filter(name => testResults[name].accessible),
+      udosWithData: Object.keys(testResults).filter(name => testResults[name].hasData),
+      suggestedUDO: Object.keys(testResults).find(name => testResults[name].accessible && testResults[name].hasData) || 
+                    Object.keys(testResults).find(name => testResults[name].accessible)
     },
     timestamp: new Date().toISOString()
   });
@@ -1716,6 +1801,7 @@ router.post('/fichas-tecnicas', asyncHandler(async (req, res) => {
 
   logger.info('SAP FichasTecn query requested', {
     companyDB,
+    sessionId: sessionId ? sessionId.substring(0, 8) + '...' : 'missing',
     filters: Object.keys(filters),
     requestId: req.requestId
   });
@@ -1738,7 +1824,17 @@ router.post('/fichas-tecnicas', asyncHandler(async (req, res) => {
       queryParams = `?$filter=${encodeURIComponent(filterString)}`;
     }
 
-    const result = await sapService.callSAPAPI(`/b1s/v1/FichasTecn${queryParams}`, 'GET', null, headers);
+    // Try FichasTecn first, if it fails try @FFF as User Defined Object
+    let result = await sapService.callSAPAPI(`/b1s/v1/FichasTecn${queryParams}`, 'GET', null, headers);
+    
+    // If FichasTecn fails, try accessing as User Defined Object @FFF
+    if (!result.success && result.statusCode === 400) {
+      logger.info('FichasTecn endpoint failed, trying @FFF UDO', {
+        companyDB,
+        requestId: req.requestId
+      });
+      result = await sapService.callSAPAPI(`/b1s/v1/U_FFF${queryParams}`, 'GET', null, headers);
+    }
     
     logger.info('SAP FichasTecn query completed', {
       companyDB,
