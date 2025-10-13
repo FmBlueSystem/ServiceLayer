@@ -42,8 +42,8 @@ const transports = [
   new winston.transports.Console({
     level: logLevel,
     format: process.env.NODE_ENV === 'production' ? customFormat : consoleFormat,
-    handleExceptions: true,
-    handleRejections: true
+    handleExceptions: false,
+    handleRejections: false
   })
 ];
 
@@ -55,8 +55,8 @@ if (process.env.NODE_ENV === 'production') {
       format: customFormat,
       maxsize: 10485760, // 10MB
       maxFiles: 5,
-      handleExceptions: true,
-      handleRejections: true
+      handleExceptions: false,
+      handleRejections: false
     }),
     new winston.transports.File({
       filename: path.join(logDir, 'combined.log'),

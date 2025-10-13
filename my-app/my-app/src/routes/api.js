@@ -49,6 +49,18 @@ const authenticateToken = asyncHandler(async (req, res, next) => {
   }
 });
 
+const ensureLocalDatabaseEnabled = (req, res, next) => {
+  if (typeof database.isEnabled === 'function' && !database.isEnabled()) {
+    return res.status(503).json({
+      error: {
+        type: 'ServiceUnavailable',
+        message: 'Local user storage is disabled. Use the SAP Service Layer authentication endpoints.'
+      }
+    });
+  }
+  return next();
+};
+
 // API Info endpoint
 router.get('/', (req, res) => {
   res.json({
@@ -87,11 +99,22 @@ router.get('/', (req, res) => {
   });
 });
 
+// App Configuration endpoint
+router.get('/config', (req, res) => {
+  res.json({
+    appName: process.env.APP_DISPLAY_NAME || 'My Application',
+    appVersion: process.env.APP_VERSION || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ============================================================================
 // AUTHENTICATION ROUTES
 // ============================================================================
 
 router.post('/auth/register', 
+  ensureLocalDatabaseEnabled,
   authLimiter,
   [
     body('email').isEmail().normalizeEmail(),
@@ -163,6 +186,7 @@ router.post('/auth/register',
 );
 
 router.post('/auth/login',
+  ensureLocalDatabaseEnabled,
   authLimiter,
   [
     body('email').isEmail().normalizeEmail(),
@@ -225,6 +249,7 @@ router.post('/auth/login',
 );
 
 router.get('/auth/profile',
+  ensureLocalDatabaseEnabled,
   authenticateToken,
   asyncHandler(async (req, res) => {
     const result = await database.query(
@@ -257,6 +282,7 @@ router.get('/auth/profile',
 // ============================================================================
 
 router.get('/users',
+  ensureLocalDatabaseEnabled,
   authenticateToken,
   asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema ERP - Fichas Técnicas</title>
+    <title id="pageTitle">Loading... - Fichas Técnicas</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -1014,7 +1014,26 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        // Load app configuration
+        async function loadAppConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                // Update app name in all locations
+                document.getElementById('pageTitle').textContent = `${config.appName} - Fichas Técnicas`;
+                
+                console.log('App configuration loaded:', config);
+            } catch (error) {
+                console.error('Error loading app configuration:', error);
+                // Fallback to default
+                const fallbackName = 'My Application';
+                document.getElementById('pageTitle').textContent = `${fallbackName} - Fichas Técnicas`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadAppConfig();
             // Check authentication
             const authData = localStorage.getItem('sapAuth');
             if (!authData) {
@@ -1051,5 +1070,20 @@
             }
         });
     </script>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <span class="bluesystem-brand">BlueSystemIO</span>
+                <span>Sistema desarrollado por BlueSystemIO</span>
+            </div>
+            <div class="footer-right">
+                <span>📞 Soporte</span>
+                <span>📄 Docs</span>
+                <span>Version 1.0.0</span>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

@@ -3,93 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema ERP - Consulta de Artículos</title>
+    <title>Sugiere un nombre para la app - Consulta de Artículos</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/app-theme.css" rel="stylesheet">
     <style>
-        :root {
-            --sap-blue: #0070E0;
-            --sap-light-blue: #E6F3FF;
-            --sap-dark-blue: #003B6B;
-            --sap-gray: #F7F7F7;
-            --sap-border: #D9D9D9;
-            --sap-text: #32363A;
-            --sap-success: #107E3E;
-            --bluesystem-accent: #0052CC;
-            --sap-white: #FFFFFF;
-            --sap-light-gray: #FAFAFA;
-            --sap-medium-gray: #6A6D70;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: '72', 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--sap-light-gray);
-            color: var(--sap-text);
-            line-height: 1.4;
-        }
-
-        /* Header SAP Style */
-        .sap-header {
-            background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 100%);
-            color: white;
-            padding: 8px 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .sap-logo-section {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .sap-logo {
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .sap-title {
-            font-size: 16px;
-            font-weight: 400;
-        }
-
-        .bluesystem-brand {
-            font-size: 12px;
-            color: rgba(255,255,255,0.8);
-            font-weight: 300;
-        }
-
-        .user-section {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .user-info {
-            font-size: 14px;
-        }
-
-        .logout-btn {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background 0.2s;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
+        /* Page-specific styles only - removing duplicates from app-theme.css */
+        
         /* Container Principal */
         .main-container {
             max-width: 1200px;
@@ -97,77 +16,10 @@
             padding: 16px;
         }
 
-        /* Panel SAP Style */
-        .sap-panel {
-            background: var(--sap-white);
-            border: 1px solid var(--sap-border);
-            border-radius: 4px;
-            margin-bottom: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        /* Panel styles are now in app-theme.css */
 
-        .sap-panel-header {
-            background: var(--sap-gray);
-            border-bottom: 1px solid var(--sap-border);
-            padding: 8px 16px;
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--sap-text);
-        }
 
-        .sap-panel-content {
-            padding: 16px;
-        }
-
-        /* Estado de Conexiones */
-        .connection-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
-        }
-
-        .connection-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            border-radius: 3px;
-            background: var(--sap-light-blue);
-        }
-
-        .connection-status {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--sap-success);
-            animation: pulse 2s infinite;
-        }
-
-        .connection-status.disconnected {
-            background: #E74C3C;
-            animation: none;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        .connection-details {
-            flex: 1;
-        }
-
-        .connection-country {
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .connection-time {
-            font-size: 12px;
-            color: var(--sap-medium-gray);
-        }
-
-        /* Formulario de Búsqueda */
+        /* Form styles are now in app-theme.css */
         .search-form {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -175,75 +27,7 @@
             margin-bottom: 16px;
         }
 
-        .sap-field {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sap-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--sap-text);
-            margin-bottom: 4px;
-        }
-
-        .sap-input {
-            border: 1px solid var(--sap-border);
-            border-radius: 3px;
-            padding: 6px 8px;
-            font-size: 14px;
-            background: var(--sap-white);
-            transition: border-color 0.2s;
-        }
-
-        .sap-input:focus {
-            outline: none;
-            border-color: var(--sap-blue);
-            box-shadow: 0 0 0 2px rgba(0, 112, 224, 0.2);
-        }
-
-        .sap-select {
-            border: 1px solid var(--sap-border);
-            border-radius: 3px;
-            padding: 6px 8px;
-            font-size: 14px;
-            background: var(--sap-white);
-            cursor: pointer;
-        }
-
-        /* Botones SAP */
-        .sap-button {
-            background: var(--sap-blue);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 3px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-weight: 400;
-        }
-
-        .sap-button:hover {
-            background: var(--sap-dark-blue);
-        }
-
-        .sap-button.secondary {
-            background: var(--sap-gray);
-            color: var(--sap-text);
-            border: 1px solid var(--sap-border);
-        }
-
-        .sap-button.secondary:hover {
-            background: #E6E6E6;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 16px;
-        }
+        /* Button styles are now in app-theme.css */
 
         /* Tabla SAP ALV Style - Mejorada */
         .sap-table-container {
@@ -828,80 +612,48 @@
     </style>
 </head>
 <body>
-    <!-- Header SAP -->
-    <div class="sap-header">
-        <div class="sap-logo-section">
-            <div class="sap-logo">Sistema ERP</div>
-            <div class="sap-title">Consulta de Artículos Multi-Compañía</div>
+    <!-- Unified Header -->
+    <header class="main-header">
+        <div class="header-left">
+            <div class="app-logo">Sugiere un nombre para la app</div>
+            <div class="page-title">Consulta de Artículos Multi-Compañía</div>
         </div>
-        <div class="bluesystem-brand">BlueSystemIO</div>
-        <div class="user-section">
+        <div class="header-right">
             <div class="user-info">
-                <span>👤 <span id="username">Usuario</span></span>
+                <i class="fas fa-user"></i>
+                <span id="username">Usuario</span>
             </div>
-            <button class="logout-btn" onclick="goBack()" style="background: var(--sap-blue); margin-right: 8px;">← Regresar</button>
-            <button class="logout-btn" onclick="logout()">🚪 Cerrar Sesión</button>
+            <button class="btn btn-secondary" onclick="goBack()" style="margin-right: 8px;">
+                <i class="fas fa-arrow-left"></i> Regresar
+            </button>
+            <button class="btn btn-secondary" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
         </div>
-    </div>
+    </header>
 
     <div class="main-container">
-        <!-- Estado de Conexiones -->
-        <div class="sap-panel">
-            <div class="sap-panel-header">📊 Estado del Sistema Multi-Compañía</div>
-            <div class="sap-panel-content">
-                <div class="connection-grid" id="connectionGrid">
-                    <div class="connection-item">
-                        <div class="connection-status" id="status-GT"></div>
-                        <div class="connection-details">
-                            <div class="connection-country">🇬🇹 Guatemala</div>
-                            <div class="connection-time" id="time-GT">Verificando...</div>
-                        </div>
-                    </div>
-                    <div class="connection-item">
-                        <div class="connection-status" id="status-HO"></div>
-                        <div class="connection-details">
-                            <div class="connection-country">🇭🇳 Honduras</div>
-                            <div class="connection-time" id="time-HO">Verificando...</div>
-                        </div>
-                    </div>
-                    <div class="connection-item">
-                        <div class="connection-status" id="status-PA"></div>
-                        <div class="connection-details">
-                            <div class="connection-country">🇵🇦 Panamá</div>
-                            <div class="connection-time" id="time-PA">Verificando...</div>
-                        </div>
-                    </div>
-                    <div class="connection-item">
-                        <div class="connection-status" id="status-CR"></div>
-                        <div class="connection-details">
-                            <div class="connection-country">🇨🇷 Costa Rica</div>
-                            <div class="connection-time" id="time-CR">Verificando...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Criterios de Búsqueda -->
-        <div class="sap-panel">
-            <div class="sap-panel-header">🔍 Criterios de Selección</div>
-            <div class="sap-panel-content">
+        <div class="card">
+            <div class="card-header">🔍 Criterios de Selección</div>
+            <div class="card-body">
                 <form class="search-form" id="searchForm">
-                    <div class="sap-field">
-                        <label class="sap-label">Código de Artículo</label>
-                        <input type="text" class="sap-input" id="itemCode" placeholder="ART-*">
+                    <div class="form-group">
+                        <label class="form-label">Código de Artículo</label>
+                        <input type="text" class="form-control" id="itemCode" placeholder="ART-*">
                     </div>
-                    <div class="sap-field">
-                        <label class="sap-label">Descripción</label>
-                        <input type="text" class="sap-input" id="description" placeholder="*Producto*">
+                    <div class="form-group">
+                        <label class="form-label">Descripción</label>
+                        <input type="text" class="form-control" id="description" placeholder="*Producto*">
                     </div>
-                    <div class="sap-field">
-                        <label class="sap-label">Número de Parte</label>
-                        <input type="text" class="sap-input" id="numeroParte" placeholder="NP-*">
+                    <div class="form-group">
+                        <label class="form-label">Número de Parte</label>
+                        <input type="text" class="form-control" id="numeroParte" placeholder="NP-*">
                     </div>
-                    <div class="sap-field">
-                        <label class="sap-label">Compañía</label>
-                        <select class="sap-select" id="company">
+                    <div class="form-group">
+                        <label class="form-label">Compañía</label>
+                        <select class="form-control" id="company">
                             <option value="">Todas las Compañías</option>
                             <option value="GT">Guatemala</option>
                             <option value="HN">Honduras</option>
@@ -911,16 +663,16 @@
                     </div>
                 </form>
                 <div class="button-group">
-                    <button type="button" class="sap-button" onclick="ejecutarBusqueda()">▶ Ejecutar</button>
-                    <button type="button" class="sap-button secondary" onclick="limpiarSeleccion()">🗑 Limpiar Selección</button>
+                    <button type="button" class="btn btn-primary" onclick="ejecutarBusqueda()">▶ Ejecutar</button>
+                    <button type="button" class="btn btn-secondary" onclick="limpiarSeleccion()">🗑 Limpiar Selección</button>
                 </div>
             </div>
         </div>
 
         <!-- Resultados -->
-        <div class="sap-panel">
-            <div class="sap-panel-header" id="resultsHeader">📋 Lista de Artículos</div>
-            <div class="sap-panel-content">
+        <div class="card">
+            <div class="card-header" id="resultsHeader">📋 Lista de Artículos</div>
+            <div class="card-body">
                 <div id="resultsContainer">
                     <div class="loading">
                         <div class="loading-spinner"></div>
@@ -953,30 +705,32 @@
         </div>
 
         <!-- Acciones -->
-        <div class="sap-panel">
-            <div class="sap-panel-header">⚡ Acciones</div>
-            <div class="sap-panel-content">
+        <div class="card">
+            <div class="card-header">⚡ Acciones</div>
+            <div class="card-body">
                 <div class="button-group">
-                    <button class="sap-button secondary">📊 Exportar a Excel</button>
-                    <button class="sap-button secondary">📄 Generar Reporte</button>
-                    <button class="sap-button secondary" onclick="actualizarDatos()">🔄 Actualizar</button>
+                    <button class="btn btn-secondary">📊 Exportar a Excel</button>
+                    <button class="btn btn-secondary">📄 Generar Reporte</button>
+                    <button class="btn btn-secondary" onclick="actualizarDatos()">🔄 Actualizar</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Footer BlueSystemIO -->
-    <div class="bluesystem-footer">
-        <div class="bluesystem-info">
-            <div class="bluesystem-logo">BlueSystemIO</div>
-            <div>Sistema desarrollado por BlueSystemIO - Consultoría en Tecnología</div>
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <span class="bluesystem-brand">BlueSystemIO</span>
+                <span>Sistema desarrollado por BlueSystemIO</span>
+            </div>
+            <div class="footer-right">
+                <span>📞 Soporte</span>
+                <span>📄 Docs</span>
+                <span>Version 1.0.0</span>
+            </div>
         </div>
-        <div class="system-info">
-            <div>📞 Soporte</div>
-            <div>📄 Docs</div>
-            <div>Version 1.0.0</div>
-        </div>
-    </div>
+    </footer>
 
     <script>
         let currentPage = 1;
@@ -1068,37 +822,6 @@
             window.location.href = '/login';
         }
 
-        // Verificar estado de conexiones
-        async function verificarConexiones() {
-            try {
-                const response = await fetch('/api/sap-validation/databases/validate');
-                const data = await response.json();
-                
-                if (data.success) {
-                    data.databases.forEach(db => {
-                        const statusEl = document.getElementById(`status-${db.country}`);
-                        const timeEl = document.getElementById(`time-${db.country}`);
-                        
-                        if (statusEl && timeEl) {
-                            if (db.accessible) {
-                                statusEl.className = 'connection-status';
-                                timeEl.textContent = `Conectado - ${db.responseTime}`;
-                            } else {
-                                statusEl.className = 'connection-status disconnected';
-                                timeEl.textContent = `Error - ${db.error || 'Conexión fallida'}`;
-                            }
-                        } else {
-                            console.warn(`No se encontraron elementos para país: ${db.country}`, {
-                                statusEl: !!statusEl,
-                                timeEl: !!timeEl
-                            });
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Error verificando conexiones:', error);
-            }
-        }
 
         // Ejecutar búsqueda
         async function ejecutarBusqueda() {
@@ -1465,7 +1188,6 @@
 
         // Actualizar datos
         function actualizarDatos() {
-            verificarConexiones();
             if (currentResults.length > 0) {
                 ejecutarBusqueda();
             }
@@ -1476,10 +1198,7 @@
             if (!checkAuth()) return;
             
             loadUserInfo();
-            verificarConexiones();
             
-            // Auto-refresh connections every 30 seconds
-            setInterval(verificarConexiones, 30000);
         });
     </script>
 </body>

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -118,14 +119,32 @@ class Application {
 
   async setupDatabase() {
     logger.info('🗄️  Setting up database connection...');
-    
+
+    if (typeof database.isEnabled === 'function' && !database.isEnabled()) {
+      logger.info('Skipping database initialization because local storage is disabled');
+      return;
+    }
+
+    const allowStartWithoutDb = (
+      process.env.ALLOW_START_WITHOUT_DATABASE === 'true'
+      || process.env.NODE_ENV !== 'production'
+    );
+
     try {
       await database.connect();
       await database.testConnection();
       logger.info('✅ Database connected successfully');
     } catch (error) {
-      logger.error('❌ Database connection failed', { error: error.message });
-      throw error;
+      if (allowStartWithoutDb) {
+        logger.warn('⚠️  Database connection unavailable, continuing without database', {
+          error: error.message,
+          environment: process.env.NODE_ENV,
+          allowStartWithoutDb
+        });
+      } else {
+        logger.error('❌ Database connection failed', { error: error.message });
+        throw error;
+      }
     }
   }
 

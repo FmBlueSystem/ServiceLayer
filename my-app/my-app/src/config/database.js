@@ -8,9 +8,23 @@ class DatabaseManager {
     this.retryAttempts = 0;
     this.maxRetries = parseInt(process.env.DB_MAX_RETRIES) || 5;
     this.retryDelay = parseInt(process.env.DB_RETRY_DELAY) || 5000;
+    this.disabled = process.env.DISABLE_LOCAL_DATABASE === 'true';
+  }
+
+  isEnabled() {
+    return !this.disabled;
+  }
+
+  isDisabled() {
+    return this.disabled;
   }
 
   async connect() {
+    if (this.disabled) {
+      logger.info('Local PostgreSQL storage disabled via configuration (DISABLE_LOCAL_DATABASE=true)');
+      return null;
+    }
+
     if (this.connected) {
       return this.pool;
     }
@@ -78,6 +92,11 @@ class DatabaseManager {
   }
 
   async testConnection() {
+    if (this.disabled) {
+      logger.debug('Skipping database test connection because local storage is disabled');
+      return { disabled: true };
+    }
+
     if (!this.pool) {
       throw new Error('Database pool not initialized');
     }
@@ -99,6 +118,12 @@ class DatabaseManager {
   }
 
   async query(text, params = []) {
+    if (this.disabled) {
+      const error = new Error('Local database disabled (DISABLE_LOCAL_DATABASE=true)');
+      error.code = 'DATABASE_DISABLED';
+      throw error;
+    }
+
     if (!this.connected || !this.pool) {
       throw new Error('Database not connected');
     }
@@ -127,6 +152,12 @@ class DatabaseManager {
   }
 
   async transaction(callback) {
+    if (this.disabled) {
+      const error = new Error('Local database disabled (DISABLE_LOCAL_DATABASE=true)');
+      error.code = 'DATABASE_DISABLED';
+      throw error;
+    }
+
     if (!this.connected || !this.pool) {
       throw new Error('Database not connected');
     }
@@ -147,13 +178,23 @@ class DatabaseManager {
   }
 
   async healthCheck() {
+    if (this.disabled) {
+      return {
+        status: 'disabled',
+        connected: false,
+        timestamp: new Date().toISOString(),
+        message: 'Local database disabled (DISABLE_LOCAL_DATABASE=true)'
+      };
+    }
+
+    const start = Date.now();
     try {
-      const result = await this.query('SELECT 1 as healthy');
+      await this.query('SELECT 1 as healthy');
       return {
         status: 'healthy',
         connected: this.connected,
         timestamp: new Date().toISOString(),
-        responseTime: result.duration
+        responseTime: `${Date.now() - start}ms`
       };
     } catch (error) {
       return {
@@ -167,6 +208,7 @@ class DatabaseManager {
 
   getStatus() {
     return {
+      enabled: !this.disabled,
       connected: this.connected,
       poolSize: this.pool ? {
         total: this.pool.totalCount,
@@ -179,6 +221,10 @@ class DatabaseManager {
   }
 
   async close() {
+    if (this.disabled) {
+      return;
+    }
+
     if (this.pool) {
       logger.info('Closing database connections...');
       await this.pool.end();
@@ -189,6 +235,11 @@ class DatabaseManager {
   }
 
   async createTables() {
+    if (this.disabled) {
+      logger.info('Skipping local table creation because DISABLE_LOCAL_DATABASE=true');
+      return;
+    }
+
     const createUsersTable = `
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,

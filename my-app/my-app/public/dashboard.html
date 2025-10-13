@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema ERP - Dashboard Principal</title>
+    <title id="pageTitle">Loading... - Dashboard Principal</title>
     <style>
         :root {
             --sap-blue: #0070E0;
@@ -618,13 +618,64 @@
             white-space: nowrap;
             z-index: 1000;
         }
+
+        /* Connection Status Styles */
+        .connection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .connection-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 6px;
+            background: var(--sap-light-gray);
+            border-left: 4px solid var(--sap-success);
+        }
+
+        .connection-item.disconnected {
+            border-left-color: var(--sap-error);
+        }
+
+        .connection-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--sap-success);
+            animation: pulse 2s infinite;
+            flex-shrink: 0;
+        }
+
+        .connection-status.disconnected {
+            background: var(--sap-error);
+            animation: none;
+        }
+
+        .connection-details {
+            flex: 1;
+        }
+
+        .connection-country {
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--sap-text);
+        }
+
+        .connection-time {
+            font-size: 12px;
+            color: var(--sap-medium-gray);
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
     <!-- Header Principal -->
     <header class="main-header">
         <div class="header-left">
-            <div class="sap-logo">Sistema ERP</div>
+            <div class="sap-logo" id="appNameHeader">Loading...</div>
             <div class="user-info">
                 <span>👤 <span id="username">Usuario</span></span>
                 <div class="connection-indicators">
@@ -719,9 +770,9 @@
     <main class="main-content">
         <!-- Sección de Bienvenida -->
         <section class="welcome-section fade-in">
-            <h1 class="welcome-title">Bienvenido al Sistema de Consulta Multi-Compañía</h1>
+            <h1 class="welcome-title">Centro de Control SAP Multi-Regional</h1>
             <p class="welcome-subtitle">
-                Acceda a los datos de inventario de forma consolidada desde múltiples países y bases de datos Sistema ERP
+                Gestione operaciones comerciales, consultas, reportes y tipos de cambio desde una plataforma unificada para Guatemala, Honduras, Panamá y Costa Rica
             </p>
         </section>
 
@@ -730,31 +781,10 @@
         <section class="stats-section fade-in" style="animation-delay: 0.1s">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-content">
-                        <h3 class="stat-number" id="totalCompanies">4</h3>
-                        <p class="stat-label">Compañías Conectadas</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">⏱️</div>
-                    <div class="stat-content">
-                        <h3 class="stat-number" id="sessionTime">0h 0m</h3>
-                        <p class="stat-label">Tiempo de Sesión</p>
-                    </div>
-                </div>
-                <div class="stat-card">
                     <div class="stat-icon">💱</div>
                     <div class="stat-content">
                         <h3 class="stat-number" id="exchangeRate">₡506.99</h3>
                         <p class="stat-label">USD/CRC (BCCR)</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">🔗</div>
-                    <div class="stat-content">
-                        <h3 class="stat-number" id="apiCalls">0</h3>
-                        <p class="stat-label">Consultas API Hoy</p>
                     </div>
                 </div>
             </div>
@@ -786,7 +816,7 @@
                 <span class="module-icon">📋</span>
                 <h3 class="module-title">Órdenes de Venta</h3>
                 <p class="module-description">
-                    Cree y gestione órdenes de venta en el sistema Sistema ERP
+                    Cree y gestione órdenes de venta en el sistema <span id="appNameSales">Loading...</span>
                 </p>
                 <div class="module-features">
                     <span class="feature-tag">Crear</span>
@@ -896,40 +926,40 @@
             </div>
         </section>
 
-        <!-- Panel de Estado -->
+        <!-- Estado del Sistema Multi-Compañía -->
         <section class="status-panel fade-in" style="animation-delay: 0.7s">
             <h2 class="status-title">
-                <span>🌐</span>
-                Estado de Conexiones ERP
+                <span>📊</span>
+                Estado del Sistema Multi-Compañía
             </h2>
-            <div class="country-status" id="countryStatus">
-                <div class="country-item">
-                    <div class="country-info">
-                        <span class="country-flag">🇬🇹</span>
-                        <span class="country-name">Guatemala</span>
+            <div class="connection-grid" id="connectionGrid">
+                <div class="connection-item">
+                    <div class="connection-status" id="status-GT"></div>
+                    <div class="connection-details">
+                        <div class="connection-country">🇬🇹 Guatemala</div>
+                        <div class="connection-time" id="time-GT">Verificando...</div>
                     </div>
-                    <span class="country-status-text">Conectado</span>
                 </div>
-                <div class="country-item">
-                    <div class="country-info">
-                        <span class="country-flag">🇭🇳</span>
-                        <span class="country-name">Honduras</span>
+                <div class="connection-item">
+                    <div class="connection-status" id="status-HO"></div>
+                    <div class="connection-details">
+                        <div class="connection-country">🇭🇳 Honduras</div>
+                        <div class="connection-time" id="time-HO">Verificando...</div>
                     </div>
-                    <span class="country-status-text">Conectado</span>
                 </div>
-                <div class="country-item">
-                    <div class="country-info">
-                        <span class="country-flag">🇵🇦</span>
-                        <span class="country-name">Panamá</span>
+                <div class="connection-item">
+                    <div class="connection-status" id="status-PA"></div>
+                    <div class="connection-details">
+                        <div class="connection-country">🇵🇦 Panamá</div>
+                        <div class="connection-time" id="time-PA">Verificando...</div>
                     </div>
-                    <span class="country-status-text">Conectado</span>
                 </div>
-                <div class="country-item">
-                    <div class="country-info">
-                        <span class="country-flag">🇨🇷</span>
-                        <span class="country-name">Costa Rica</span>
+                <div class="connection-item">
+                    <div class="connection-status" id="status-CR"></div>
+                    <div class="connection-details">
+                        <div class="connection-country">🇨🇷 Costa Rica</div>
+                        <div class="connection-time" id="time-CR">Verificando...</div>
                     </div>
-                    <span class="country-status-text">Conectado</span>
                 </div>
             </div>
             <div class="session-info">
@@ -938,48 +968,11 @@
             </div>
         </section>
 
-        <!-- Quick Actions -->
-        <section class="quick-actions fade-in" style="animation-delay: 0.8s">
-            <h2 class="quick-actions-title">
-                <span>⚡</span>
-                Acciones Rápidas
-            </h2>
-            <div class="quick-actions-grid">
-                <button class="quick-action-btn" onclick="navigateToArticulos(); incrementApiCalls();">
-                    <span>🔍</span>
-                    Buscar Artículos
-                </button>
-                <button class="quick-action-btn" onclick="navigateToSalesOrders(); incrementApiCalls();">
-                    <span>📋</span>
-                    Nueva Orden
-                </button>
-                <button class="quick-action-btn" onclick="navigateToExchangeRates(); incrementApiCalls();">
-                    <span>💱</span>
-                    Tipos de Cambio
-                </button>
-                <button class="quick-action-btn" onclick="navigateToEEFFReports(); incrementApiCalls();">
-                    <span>📊</span>
-                    Reportes EEFF
-                </button>
-                <button class="quick-action-btn" onclick="navigateToFichasTecnicas(); incrementApiCalls();">
-                    <span>📋</span>
-                    Fichas Técnicas
-                </button>
-                <button class="quick-action-btn" onclick="loadExchangeRate(); incrementApiCalls();">
-                    <span>🔄</span>
-                    Actualizar BCCR
-                </button>
-                <button class="quick-action-btn" onclick="window.open('/api/sap/demo/bccr-rates', '_blank'); incrementApiCalls();">
-                    <span>🌐</span>
-                    API Demo
-                </button>
-            </div>
-        </section>
     </main>
 
     <!-- Footer -->
     <footer class="main-footer">
-        <div>© 2025 Sistema desarrollado por <span class="bluesystem-branding">BlueSystemIO</span> - Consultoría en Tecnología</div>
+        <div>© 2025 Sistema desarrollado por <span class="bluesystem-branding">BlueSystemIO</span></div>
     </footer>
 
     <script>
@@ -1045,7 +1038,7 @@
             alert(`👤 Perfil de Usuario\\n\\n` +
                   `Usuario: ${authData.username}\\n` +
                   `Sesión iniciada: ${new Date(authData.loginTime).toLocaleString()}\\n` +
-                  `Compañías conectadas: ${companies}\\n` +
+                  `Regiones conectadas: ${companies}\\n` +
                   `Conexiones exitosas: ${successCount}\\n` +
                   `Total bases de datos: ${authData.totalDatabases || companies}`);
             
@@ -1055,7 +1048,7 @@
         // Show system info
         function showSystemInfo() {
             const systemInfo = `🖥️ Información del Sistema\\n\\n` +
-                             `🌐 Sistema ERP Service Layer\\n` +
+                             `🌐 ${window.appConfig?.appName || 'Loading...'} Service Layer\\n` +
                              `💱 Integración BCCR (Banco Central CR)\\n` +
                              `🏢 Multi-compañía: Guatemala, Honduras, Panamá, Costa Rica\\n` +
                              `🚀 Desarrollado por BlueSystemIO\\n` +
@@ -1116,11 +1109,6 @@
             const timeStr = `${hours}h ${minutes}m`;
             document.getElementById('sessionDuration').textContent = timeStr;
             
-            // Also update the stat card
-            const sessionTimeEl = document.getElementById('sessionTime');
-            if (sessionTimeEl) {
-                sessionTimeEl.textContent = timeStr;
-            }
         }
 
         // Load BCCR exchange rate
@@ -1141,21 +1129,6 @@
             }
         }
 
-        // Update API calls counter (simulated)
-        function updateApiCalls() {
-            const apiCallsEl = document.getElementById('apiCalls');
-            if (apiCallsEl) {
-                const calls = parseInt(localStorage.getItem('dailyApiCalls') || '0');
-                apiCallsEl.textContent = calls.toLocaleString();
-            }
-        }
-
-        // Increment API calls
-        function incrementApiCalls() {
-            const calls = parseInt(localStorage.getItem('dailyApiCalls') || '0');
-            localStorage.setItem('dailyApiCalls', (calls + 1).toString());
-            updateApiCalls();
-        }
 
         // Navigate to articles page
         function navigateToArticulos() {
@@ -1238,12 +1211,66 @@
             window.location.href = '/login';
         }
 
+        // Verificar estado de conexiones
+        async function verificarConexiones() {
+            try {
+                const response = await fetch('/api/sap-validation/databases/validate');
+                const data = await response.json();
+                
+                if (data.success) {
+                    data.databases.forEach(db => {
+                        const statusEl = document.getElementById(`status-${db.country}`);
+                        const timeEl = document.getElementById(`time-${db.country}`);
+                        const itemEl = statusEl?.closest('.connection-item');
+                        
+                        if (statusEl && timeEl) {
+                            if (db.accessible) {
+                                statusEl.className = 'connection-status';
+                                timeEl.textContent = `Conectado - ${db.responseTime}`;
+                                if (itemEl) itemEl.classList.remove('disconnected');
+                            } else {
+                                statusEl.className = 'connection-status disconnected';
+                                timeEl.textContent = `Error - ${db.error || 'Conexión fallida'}`;
+                                if (itemEl) itemEl.classList.add('disconnected');
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error verificando conexiones:', error);
+            }
+        }
+
+        // Load app configuration
+        async function loadAppConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                window.appConfig = config;
+                
+                // Update app name in all locations
+                document.getElementById('pageTitle').textContent = `${config.appName} - Dashboard Principal`;
+                document.getElementById('appNameHeader').textContent = config.appName;
+                document.getElementById('appNameSales').textContent = config.appName;
+                
+                console.log('App configuration loaded:', config);
+            } catch (error) {
+                console.error('Error loading app configuration:', error);
+                // Fallback to default
+                const fallbackName = 'My Application';
+                document.getElementById('pageTitle').textContent = `${fallbackName} - Dashboard Principal`;
+                document.getElementById('appNameHeader').textContent = fallbackName;
+                document.getElementById('appNameSales').textContent = fallbackName;
+            }
+        }
+
         // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadAppConfig();
             checkAuth();
             loadUserInfo();
             loadExchangeRate();
-            updateApiCalls();
+            verificarConexiones();
             
             // Update session duration every minute
             setInterval(updateSessionDuration, 60000);
@@ -1251,6 +1278,9 @@
             
             // Update exchange rate every 15 minutes
             setInterval(loadExchangeRate, 15 * 60 * 1000);
+            
+            // Update connections every 30 seconds
+            setInterval(verificarConexiones, 30000);
             
             console.log('Dashboard loaded successfully');
         });

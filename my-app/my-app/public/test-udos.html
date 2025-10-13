@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Loading... - UDO Test</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/app-theme.css" rel="stylesheet">
+    <style>
+        .result-success { color: var(--sap-success); }
+        .result-error { color: var(--sap-error); }
+    </style>
+</head>
+<body>
+    <!-- Header Principal -->
+    <header class="main-header">
+        <div class="header-left">
+            <h1 class="system-title" id="systemTitle">Loading...</h1>
+            <h2 class="page-title">UDO Diagnostic Test</h2>
+        </div>
+        <div class="header-right">
+            <a href="/dashboard" class="logout-btn">
+                <i class="fas fa-arrow-left"></i>
+                Volver al Dashboard
+            </a>
+        </div>
+    </header>
+
+    <div class="main-container">
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <label for="sessionSelect" class="form-label">Database Session:</label>
+                <select id="sessionSelect" class="form-select">
+                    <option value="">Select a database session...</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="companyDB" class="form-label">Company Database:</label>
+                <input type="text" id="companyDB" class="form-control" value="SBO_GT_STIA_TEST" readonly>
+            </div>
+        </div>
+
+        <button id="testUDOsBtn" class="btn btn-primary mb-4" disabled>Test UDO Endpoints</button>
+        
+        <div id="loading" class="d-none">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-2">Testing UDO endpoints...</span>
+        </div>
+
+        <div id="results" class="mt-4"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:3000/api/sap';
+        let currentSessions = {};
+
+        // Load app configuration
+        async function loadAppConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                // Update app name in all locations
+                document.getElementById('pageTitle').textContent = `${config.appName} - UDO Test`;
+                document.getElementById('systemTitle').textContent = config.appName;
+                
+                console.log('App configuration loaded:', config);
+            } catch (error) {
+                console.error('Error loading app configuration:', error);
+                // Fallback to default
+                const fallbackName = 'My Application';
+                document.getElementById('pageTitle').textContent = `${fallbackName} - UDO Test`;
+                document.getElementById('systemTitle').textContent = fallbackName;
+            }
+        }
+
+        // Load sessions on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadAppConfig();
+            loadSessions();
+        });
+
+        async function loadSessions() {
+            try {
+                const sessions = JSON.parse(localStorage.getItem('sapSessions') || '{}');
+                currentSessions = sessions;
+                
+                const sessionSelect = document.getElementById('sessionSelect');
+                sessionSelect.innerHTML = '<option value="">Select a database session...</option>';
+                
+                for (const [companyDB, sessionData] of Object.entries(sessions)) {
+                    if (sessionData.sessionId && sessionData.username) {
+                        const option = document.createElement('option');
+                        option.value = sessionData.sessionId;
+                        option.textContent = `${companyDB} (${sessionData.username})`;
+                        sessionSelect.appendChild(option);
+                    }
+                }
+
+                // Enable test button if there are sessions
+                document.getElementById('testUDOsBtn').disabled = Object.keys(sessions).length === 0;
+                
+                // Auto-select Guatemala test database if available
+                const gtTestSession = sessions['SBO_GT_STIA_TEST'];
+                if (gtTestSession && gtTestSession.sessionId) {
+                    sessionSelect.value = gtTestSession.sessionId;
+                }
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+            }
+        }
+
+        document.getElementById('testUDOsBtn').addEventListener('click', testUDOEndpoints);
+
+        async function testUDOEndpoints() {
+            const sessionId = document.getElementById('sessionSelect').value;
+            const companyDB = document.getElementById('companyDB').value;
+
+            if (!sessionId) {
+                alert('Please select a database session first');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            loading.classList.remove('d-none');
+            results.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/test-udos`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        companyDB: companyDB
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('Error testing UDO endpoints:', error);
+                results.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            } finally {
+                loading.classList.add('d-none');
+            }
+        }
+
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            
+            let html = '<div class="card">';
+            html += '<div class="card-header"><h3>UDO Test Results</h3></div>';
+            html += '<div class="card-body">';
+
+            // Summary
+            html += '<div class="mb-4">';
+            html += '<h5>Summary</h5>';
+            html += '<ul>';
+            html += `<li><strong>Accessible UDOs:</strong> ${data.recommendations.accessibleUDOs.length}</li>`;
+            html += `<li><strong>UDOs with Data:</strong> ${data.recommendations.udosWithData.length}</li>`;
+            html += `<li><strong>Suggested UDO:</strong> ${data.recommendations.suggestedUDO || 'None found'}</li>`;
+            html += '</ul>';
+            html += '</div>';
+
+            // Detailed results
+            html += '<h5>Detailed Test Results</h5>';
+            html += '<div class="table-responsive">';
+            html += '<table class="table table-striped">';
+            html += '<thead><tr><th>UDO Name</th><th>Status</th><th>Status Code</th><th>Has Data</th><th>Error</th></tr></thead>';
+            html += '<tbody>';
+
+            for (const [udoName, result] of Object.entries(data.testResults)) {
+                const statusClass = result.accessible ? 'result-success' : 'result-error';
+                const statusText = result.accessible ? '✓ Accessible' : '✗ Not Accessible';
+                const hasDataText = result.hasData ? '✓ Yes' : '✗ No';
+                
+                html += '<tr>';
+                html += `<td><strong>${udoName}</strong></td>`;
+                html += `<td class="${statusClass}">${statusText}</td>`;
+                html += `<td>${result.statusCode}</td>`;
+                html += `<td>${hasDataText}</td>`;
+                html += `<td>${result.error || '-'}</td>`;
+                html += '</tr>';
+            }
+
+            html += '</tbody></table>';
+            html += '</div>';
+
+            // Recommendations
+            if (data.recommendations.accessibleUDOs.length > 0) {
+                html += '<div class="alert alert-success mt-3">';
+                html += '<h6>✓ Found Accessible UDOs:</h6>';
+                html += '<ul class="mb-0">';
+                data.recommendations.accessibleUDOs.forEach(udo => {
+                    html += `<li><strong>${udo}</strong></li>`;
+                });
+                html += '</ul>';
+                html += '</div>';
+            } else {
+                html += '<div class="alert alert-warning mt-3">';
+                html += '<h6>⚠️ No Accessible UDOs Found</h6>';
+                html += '<p class="mb-0">The @FFF UDO may not exist in this database or may require different permissions.</p>';
+                html += '</div>';
+            }
+
+            html += '</div></div>';
+            
+            results.innerHTML = html;
+        }
+    </script>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <span class="bluesystem-brand">BlueSystemIO</span>
+                <span>Sistema desarrollado por BlueSystemIO</span>
+            </div>
+            <div class="footer-right">
+                <span>📞 Soporte</span>
+                <span>📄 Docs</span>
+                <span>Version 1.0.0</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

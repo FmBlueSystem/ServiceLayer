@@ -7,25 +7,34 @@ class PlatformUtils {
     this.platformInfo = this.detectPlatform();
   }
 
+  safeOsCall(fn, fallback = null) {
+    try {
+      return fn();
+    } catch (error) {
+      return fallback;
+    }
+  }
+
   detectPlatform() {
     const platform = process.platform;
     const arch = process.arch;
     const nodeVersion = process.version;
     const containerInfo = this.detectContainer();
+    const cpuInfo = this.safeOsCall(() => os.cpus(), []);
 
     return {
       os: {
         platform,
         arch,
-        type: os.type(),
-        release: os.release(),
-        version: os.version(),
-        hostname: os.hostname(),
-        uptime: os.uptime(),
-        loadavg: os.loadavg(),
-        totalmem: os.totalmem(),
-        freemem: os.freemem(),
-        cpus: os.cpus().length
+        type: this.safeOsCall(() => os.type()),
+        release: this.safeOsCall(() => os.release()),
+        version: this.safeOsCall(() => os.version()),
+        hostname: this.safeOsCall(() => os.hostname()),
+        uptime: this.safeOsCall(() => os.uptime()),
+        loadavg: this.safeOsCall(() => os.loadavg(), []),
+        totalmem: this.safeOsCall(() => os.totalmem()),
+        freemem: this.safeOsCall(() => os.freemem()),
+        cpus: Array.isArray(cpuInfo) ? cpuInfo.length : null
       },
       node: {
         version: nodeVersion,
@@ -194,11 +203,16 @@ class PlatformUtils {
   }
 
   getNetworkInfo() {
-    const interfaces = os.networkInterfaces();
+    const interfaces = this.safeOsCall(() => os.networkInterfaces(), {});
+    
+    if (!interfaces || typeof interfaces !== 'object') {
+      return {};
+    }
+
     const networkInfo = {};
 
     for (const [name, addresses] of Object.entries(interfaces)) {
-      networkInfo[name] = addresses.map(addr => ({
+      networkInfo[name] = (addresses || []).map(addr => ({
         address: addr.address,
         netmask: addr.netmask,
         family: addr.family,
@@ -211,11 +225,17 @@ class PlatformUtils {
 
   getMemoryInfo() {
     const memoryUsage = process.memoryUsage();
+    const total = this.safeOsCall(() => os.totalmem(), 0);
+    const free = this.safeOsCall(() => os.freemem(), 0);
+    const used = total > 0 ? total - free : 0;
     const systemMemory = {
-      total: os.totalmem(),
-      free: os.freemem(),
-      used: os.totalmem() - os.freemem()
+      total,
+      free,
+      used
     };
+
+    const usedPercent = total > 0 ? ((used / total) * 100).toFixed(2) : '0.00';
+    const processPercent = total > 0 ? ((memoryUsage.rss / total) * 100).toFixed(2) : '0.00';
 
     return {
       process: {
@@ -227,24 +247,25 @@ class PlatformUtils {
       },
       system: systemMemory,
       percentage: {
-        used: ((systemMemory.used / systemMemory.total) * 100).toFixed(2),
-        processOfTotal: ((memoryUsage.rss / systemMemory.total) * 100).toFixed(2)
+        used: usedPercent,
+        processOfTotal: processPercent
       }
     };
   }
 
   getCPUInfo() {
-    const cpus = os.cpus();
-    const loadavg = os.loadavg();
+    const cpus = this.safeOsCall(() => os.cpus(), []);
+    const loadavg = this.safeOsCall(() => os.loadavg(), [0, 0, 0]);
+    const cpu = Array.isArray(cpus) && cpus.length > 0 ? cpus[0] : null;
 
     return {
-      count: cpus.length,
-      model: cpus[0]?.model || 'Unknown',
-      speed: cpus[0]?.speed || 0,
+      count: Array.isArray(cpus) ? cpus.length : 0,
+      model: cpu?.model || 'Unknown',
+      speed: cpu?.speed || 0,
       loadAverage: {
-        '1min': loadavg[0],
-        '5min': loadavg[1],
-        '15min': loadavg[2]
+        '1min': Array.isArray(loadavg) ? loadavg[0] || 0 : 0,
+        '5min': Array.isArray(loadavg) ? loadavg[1] || 0 : 0,
+        '15min': Array.isArray(loadavg) ? loadavg[2] || 0 : 0
       },
       architecture: this.platformInfo.os.arch
     };
@@ -265,6 +286,7 @@ class PlatformUtils {
   getSystemSummary() {
     const memory = this.getMemoryInfo();
     const cpu = this.getCPUInfo();
+    const systemUptime = this.safeOsCall(() => os.uptime(), 0);
 
     return {
       platform: this.getPlatformName(),
@@ -279,10 +301,10 @@ class PlatformUtils {
       cpu: {
         count: cpu.count,
         model: cpu.model,
-        loadAverage: cpu.loadAverage['1min'].toFixed(2)
+        loadAverage: cpu.loadAverage['1min'].toFixed ? cpu.loadAverage['1min'].toFixed(2) : cpu.loadAverage['1min']
       },
       uptime: {
-        system: Math.floor(os.uptime()),
+        system: Math.floor(systemUptime || 0),
         process: Math.floor(process.uptime())
       }
     };

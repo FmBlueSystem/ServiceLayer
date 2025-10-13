@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema ERP - Tipos de Cambio</title>
+    <title id="pageTitle">Loading... - Tipos de Cambio</title>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/app-theme.css" rel="stylesheet">
     <style>
         :root {
             --sap-blue: #0070E0;
@@ -350,7 +352,7 @@
         <div class="header-content">
             <div>
                 <h1>Tipos de Cambio</h1>
-                <div class="header-subtitle">Sistema de Consulta Multi-Compañía Sistema ERP</div>
+                <div class="header-subtitle">Sistema de Consulta Multi-Compañía <span id="systemName">Loading...</span></div>
             </div>
             <div class="header-actions">
                 <button onclick="refreshAllRates()" class="btn btn-secondary" id="refreshBtn">
@@ -420,7 +422,28 @@
         let currentExchangeRates = {};
 
         // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
+        // Load app configuration
+        async function loadAppConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                // Update app name in all locations
+                document.getElementById('pageTitle').textContent = `${config.appName} - Tipos de Cambio`;
+                document.getElementById('systemName').textContent = config.appName;
+                
+                console.log('App configuration loaded:', config);
+            } catch (error) {
+                console.error('Error loading app configuration:', error);
+                // Fallback to default
+                const fallbackName = 'My Application';
+                document.getElementById('pageTitle').textContent = `${fallbackName} - Tipos de Cambio`;
+                document.getElementById('systemName').textContent = fallbackName;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadAppConfig();
             console.log('Exchange rates page loaded');
             
             // Check authentication
@@ -859,5 +882,20 @@
 
         console.log('Exchange rates page script loaded successfully');
     </script>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <span class="bluesystem-brand">BlueSystemIO</span>
+                <span>Sistema desarrollado por BlueSystemIO</span>
+            </div>
+            <div class="footer-right">
+                <span>📞 Soporte</span>
+                <span>📄 Docs</span>
+                <span>Version 1.0.0</span>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
