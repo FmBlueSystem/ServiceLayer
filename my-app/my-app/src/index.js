@@ -53,11 +53,13 @@ class Application {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
           scriptSrcAttr: ["'unsafe-inline'"],
           imgSrc: ["'self'", "data:", "https:"],
           formAction: ["'self'", "javascript:"],
+          fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
+          connectSrc: ["'self'", "https:", "wss:"],
         },
       },
       hsts: process.env.NODE_ENV === 'production',
