@@ -1,0 +1,565 @@
+name: Multi-Platform Docker Build & Deploy
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Lint and test the code
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: myapp_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Run format check
+      run: npm run format:check
+
+    - name: Run unit tests
+      run: npm test
+      env:
+        NODE_ENV: test
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_DB: myapp_test
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: password
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        REDIS_DB: 1
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      if: matrix.node-version == '18.x'
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+
+  # Build Docker images for multiple platforms
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha,prefix={{branch}}-
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker/Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        target: production
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          NODE_VERSION=18
+          BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+          VCS_REF=${{ github.sha }}
+
+  # Security scanning
+  security:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Integration tests with Docker
+  integration-test:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create test environment
+      run: |
+        cat > docker-compose.test.yml << EOF
+        version: '3.8'
+        services:
+          app:
+            image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            platform: ${{ matrix.platform }}
+            ports:
+              - "3000:3000"
+            environment:
+              NODE_ENV: test
+              DATABASE_URL: postgresql://postgres:password@postgres:5432/myapp_test
+              REDIS_URL: redis://redis:6379/1
+            depends_on:
+              postgres:
+                condition: service_healthy
+              redis:
+                condition: service_healthy
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+              interval: 10s
+              timeout: 5s
+              retries: 3
+              start_period: 30s
+          
+          postgres:
+            image: postgres:15-alpine
+            platform: ${{ matrix.platform }}
+            environment:
+              POSTGRES_PASSWORD: password
+              POSTGRES_DB: myapp_test
+            healthcheck:
+              test: ["CMD-SHELL", "pg_isready -U postgres"]
+              interval: 5s
+              timeout: 5s
+              retries: 5
+          
+          redis:
+            image: redis:7-alpine
+            platform: ${{ matrix.platform }}
+            healthcheck:
+              test: ["CMD", "redis-cli", "ping"]
+              interval: 5s
+              timeout: 3s
+              retries: 5
+        EOF
+
+    - name: Start test environment
+      run: docker-compose -f docker-compose.test.yml up -d
+
+    - name: Wait for services to be healthy
+      run: |
+        timeout 120s bash -c '
+          while ! docker-compose -f docker-compose.test.yml ps | grep -q "healthy.*healthy.*healthy"; do
+            echo "Waiting for services to be healthy..."
+            sleep 5
+          done
+        '
+
+    - name: Run integration tests
+      run: |
+        # Test health endpoints
+        curl -f http://localhost:3000/health
+        curl -f http://localhost:3000/health/ping
+        curl -f http://localhost:3000/api
+        
+        # Test authentication flow
+        response=$(curl -s -X POST http://localhost:3000/api/auth/register \
+          -H "Content-Type: application/json" \
+          -d '{
+            "email": "test@example.com",
+            "password": "TestPassword123!",
+            "firstName": "Test",
+            "lastName": "User"
+          }')
+        
+        token=$(echo $response | jq -r '.token')
+        if [ "$token" == "null" ]; then
+          echo "Registration failed"
+          exit 1
+        fi
+        
+        # Test authenticated endpoint
+        curl -f -H "Authorization: Bearer $token" http://localhost:3000/api/auth/profile
+
+    - name: Check application logs
+      if: failure()
+      run: docker-compose -f docker-compose.test.yml logs app
+
+    - name: Cleanup test environment
+      if: always()
+      run: docker-compose -f docker-compose.test.yml down -v
+
+  # Performance testing
+  performance:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Start application for performance testing
+      run: |
+        docker run -d --name perf-test \
+          -p 3000:3000 \
+          -e NODE_ENV=production \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+    - name: Wait for application to start
+      run: |
+        timeout 60s bash -c '
+          while ! curl -f http://localhost:3000/health > /dev/null 2>&1; do
+            echo "Waiting for application to start..."
+            sleep 2
+          done
+        '
+
+    - name: Install k6
+      run: |
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+
+    - name: Run performance tests
+      run: |
+        cat > performance-test.js << 'EOF'
+        import http from 'k6/http';
+        import { check, sleep } from 'k6';
+
+        export let options = {
+          stages: [
+            { duration: '30s', target: 10 },
+            { duration: '1m', target: 50 },
+            { duration: '30s', target: 0 }
+          ],
+          thresholds: {
+            http_req_duration: ['p(95)<500'],
+            http_req_failed: ['rate<0.02']
+          }
+        };
+
+        export default function() {
+          let response = http.get('http://localhost:3000/health');
+          check(response, {
+            'status is 200': (r) => r.status === 200,
+            'response time < 200ms': (r) => r.timings.duration < 200,
+          });
+          sleep(1);
+        }
+        EOF
+        
+        k6 run performance-test.js
+
+    - name: Cleanup performance test
+      if: always()
+      run: docker stop perf-test && docker rm perf-test
+
+  # Create release with migration packages
+  release:
+    needs: [test, build, security, integration-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    strategy:
+      matrix:
+        platform: [windows, mac, linux]
+        include:
+          - platform: windows
+            arch: linux/amd64
+            suffix: windows
+          - platform: mac
+            arch: linux/arm64
+            suffix: mac
+          - platform: linux
+            arch: linux/amd64
+            suffix: linux
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build platform-specific image
+      run: |
+        docker buildx build \
+          --platform ${{ matrix.arch }} \
+          -f docker/Dockerfile \
+          --target production \
+          -t my-app:${{ matrix.suffix }} \
+          --load \
+          .
+
+    - name: Export container image
+      run: |
+        mkdir -p release-packages
+        node scripts/migrate-container.js export \
+          --platform ${{ matrix.platform }} \
+          --no-validate
+        
+        # Move exported files to release directory
+        mv docker-exports/* release-packages/ || true
+
+    - name: Create deployment scripts
+      run: |
+        mkdir -p release-packages/scripts
+        
+        # Create Windows deployment script
+        cat > release-packages/deploy-${{ matrix.platform }}.ps1 << 'EOF'
+        # PowerShell deployment script for ${{ matrix.platform }}
+        Write-Host "Deploying My Multiplatform App on ${{ matrix.platform }}..." -ForegroundColor Green
+        
+        $imageName = "my-app-${{ matrix.suffix }}"
+        $imageFile = Get-ChildItem -Name "my-app-${{ matrix.suffix }}-*.tar.gz" | Select-Object -First 1
+        
+        if ($imageFile) {
+            Write-Host "Loading Docker image: $imageFile" -ForegroundColor Yellow
+            docker load -i $imageFile
+            
+            Write-Host "Starting application..." -ForegroundColor Yellow
+            docker run -d -p 3000:3000 --name my-app $imageName
+            
+            Write-Host "Application deployed successfully!" -ForegroundColor Green
+            Write-Host "Access at: http://localhost:3000" -ForegroundColor Cyan
+        } else {
+            Write-Host "No image file found!" -ForegroundColor Red
+        }
+        EOF
+        
+        # Create Unix deployment script
+        cat > release-packages/deploy-${{ matrix.platform }}.sh << 'EOF'
+        #!/bin/bash
+        # Bash deployment script for ${{ matrix.platform }}
+        echo "🚀 Deploying My Multiplatform App on ${{ matrix.platform }}..."
+        
+        IMAGE_NAME="my-app-${{ matrix.suffix }}"
+        IMAGE_FILE=$(ls my-app-${{ matrix.suffix }}-*.tar.gz 2>/dev/null | head -1)
+        
+        if [ -n "$IMAGE_FILE" ]; then
+            echo "📦 Loading Docker image: $IMAGE_FILE"
+            docker load -i "$IMAGE_FILE"
+            
+            echo "🚀 Starting application..."
+            docker run -d -p 3000:3000 --name my-app "$IMAGE_NAME"
+            
+            echo "✅ Application deployed successfully!"
+            echo "🌐 Access at: http://localhost:3000"
+        else
+            echo "❌ No image file found!"
+            exit 1
+        fi
+        EOF
+        
+        chmod +x release-packages/deploy-${{ matrix.platform }}.sh
+
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-package-${{ matrix.platform }}
+        path: release-packages/
+        retention-days: 30
+
+  # Publish GitHub release
+  publish-release:
+    needs: release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all release artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: release-artifacts
+
+    - name: Prepare release assets
+      run: |
+        mkdir -p release-assets
+        
+        # Package each platform
+        for platform in windows mac linux; do
+          cd release-artifacts/release-package-$platform
+          zip -r ../../release-assets/my-app-$platform-${GITHUB_REF#refs/tags/}.zip .
+          cd ../../
+        done
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: release-assets/*
+        body: |
+          ## Multi-Platform Container Release
+          
+          This release includes pre-built Docker containers for multiple platforms:
+          
+          ### 📦 Available Packages
+          - **Windows (x86_64)**: `my-app-windows-${{ github.ref_name }}.zip`
+          - **macOS (ARM64)**: `my-app-mac-${{ github.ref_name }}.zip`
+          - **Linux (x86_64)**: `my-app-linux-${{ github.ref_name }}.zip`
+          
+          ### 🚀 Quick Deployment
+          
+          1. Download the appropriate package for your platform
+          2. Extract the package
+          3. Run the deployment script:
+             - Windows: `.\deploy-windows.ps1`
+             - macOS/Linux: `./deploy-mac.sh` or `./deploy-linux.sh`
+          
+          ### 📋 What's Included
+          - Pre-built Docker image (compressed)
+          - Platform-specific deployment scripts
+          - Environment configuration templates
+          - Migration metadata and checksums
+          
+          ### 🔧 Manual Deployment
+          ```bash
+          # Load the image
+          docker load -i my-app-[platform]-*.tar.gz
+          
+          # Run the container
+          docker run -d -p 3000:3000 --name my-app my-app:[platform]
+          ```
+          
+          ### 🌐 Access
+          After deployment, the application will be available at:
+          - Health Check: http://localhost:3000/health
+          - API Documentation: http://localhost:3000/api
+          - Web Interface: http://localhost:3000
+        draft: false
+        prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Cleanup old packages
+  cleanup:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [publish-release]
+    
+    steps:
+    - name: Delete old packages
+      uses: actions/delete-package-versions@v4
+      with:
+        package-name: ${{ env.IMAGE_NAME }}
+        package-type: 'container'
+        min-versions-to-keep: 10
+        delete-only-untagged-versions: true

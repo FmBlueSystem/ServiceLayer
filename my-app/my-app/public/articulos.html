@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema ERP - Consulta de Artículos</title>
+    <style>
+        :root {
+            --sap-blue: #0070E0;
+            --sap-light-blue: #E6F3FF;
+            --sap-dark-blue: #003B6B;
+            --sap-gray: #F7F7F7;
+            --sap-border: #D9D9D9;
+            --sap-text: #32363A;
+            --sap-success: #107E3E;
+            --bluesystem-accent: #0052CC;
+            --sap-white: #FFFFFF;
+            --sap-light-gray: #FAFAFA;
+            --sap-medium-gray: #6A6D70;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: '72', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--sap-light-gray);
+            color: var(--sap-text);
+            line-height: 1.4;
+        }
+
+        /* Header SAP Style */
+        .sap-header {
+            background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 100%);
+            color: white;
+            padding: 8px 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sap-logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sap-logo {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .sap-title {
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        .bluesystem-brand {
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+            font-weight: 300;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info {
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Container Principal */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* Panel SAP Style */
+        .sap-panel {
+            background: var(--sap-white);
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .sap-panel-header {
+            background: var(--sap-gray);
+            border-bottom: 1px solid var(--sap-border);
+            padding: 8px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--sap-text);
+        }
+
+        .sap-panel-content {
+            padding: 16px;
+        }
+
+        /* Estado de Conexiones */
+        .connection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .connection-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 3px;
+            background: var(--sap-light-blue);
+        }
+
+        .connection-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--sap-success);
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.disconnected {
+            background: #E74C3C;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .connection-details {
+            flex: 1;
+        }
+
+        .connection-country {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .connection-time {
+            font-size: 12px;
+            color: var(--sap-medium-gray);
+        }
+
+        /* Formulario de Búsqueda */
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .sap-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sap-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sap-text);
+            margin-bottom: 4px;
+        }
+
+        .sap-input {
+            border: 1px solid var(--sap-border);
+            border-radius: 3px;
+            padding: 6px 8px;
+            font-size: 14px;
+            background: var(--sap-white);
+            transition: border-color 0.2s;
+        }
+
+        .sap-input:focus {
+            outline: none;
+            border-color: var(--sap-blue);
+            box-shadow: 0 0 0 2px rgba(0, 112, 224, 0.2);
+        }
+
+        .sap-select {
+            border: 1px solid var(--sap-border);
+            border-radius: 3px;
+            padding: 6px 8px;
+            font-size: 14px;
+            background: var(--sap-white);
+            cursor: pointer;
+        }
+
+        /* Botones SAP */
+        .sap-button {
+            background: var(--sap-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 3px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-weight: 400;
+        }
+
+        .sap-button:hover {
+            background: var(--sap-dark-blue);
+        }
+
+        .sap-button.secondary {
+            background: var(--sap-gray);
+            color: var(--sap-text);
+            border: 1px solid var(--sap-border);
+        }
+
+        .sap-button.secondary:hover {
+            background: #E6E6E6;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+
+        /* Tabla SAP ALV Style - Mejorada */
+        .sap-table-container {
+            overflow-x: auto;
+            border: 1px solid var(--sap-border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: var(--sap-white);
+        }
+
+        .sap-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--sap-white);
+            font-size: 14px;
+        }
+
+        .sap-table th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 13px;
+            color: #495057;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+
+        .sap-table th::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--sap-blue) 0%, #00c9ff 100%);
+        }
+
+        .sap-table td {
+            border: 1px solid #e9ecef;
+            padding: 12px 16px;
+            vertical-align: middle;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        /* Filas alternadas */
+        .sap-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .sap-table tbody tr:nth-child(odd) {
+            background: var(--sap-white);
+        }
+
+        /* Hover effect mejorado */
+        .sap-table tbody tr:hover {
+            background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 112, 224, 0.15);
+        }
+
+        /* Columnas específicas con colores */
+        .sap-table th:nth-child(1), .sap-table td:nth-child(1) {
+            width: 130px;
+            text-align: center;
+        }
+        
+        .sap-table td:nth-child(1) {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            font-weight: 600;
+            color: #e65100 !important;
+        }
+        
+        .sap-table th:nth-child(2), .sap-table td:nth-child(2) {
+            width: 150px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .sap-table td:nth-child(2) {
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+            font-weight: 600;
+            color: #6a1b9a !important;
+        }
+        
+        .sap-table th:nth-child(3), .sap-table td:nth-child(3) {
+            min-width: 250px;
+        }
+        
+        .sap-table td:nth-child(3) {
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+            font-weight: 500;
+            color: #2e7d32 !important;
+        }
+        
+        .sap-table th:nth-child(4), .sap-table td:nth-child(4) {
+            width: 160px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .sap-table td:nth-child(4) {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            font-weight: 600;
+            color: #e65100 !important;
+        }
+        
+        .sap-table th:nth-child(5), .sap-table td:nth-child(5) {
+            width: 120px;
+            text-align: right;
+        }
+        
+        .sap-table td:nth-child(5) {
+            background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+            font-weight: 700;
+            color: #00695c !important;
+        }
+
+        /* Banderas de países con estilos mejorados */
+        .country-flag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: #e65100 !important;
+        }
+
+        /* Efectos de hover para celdas específicas */
+        .sap-table tbody tr:hover td:nth-child(1) {
+            background: linear-gradient(135deg, #ff8f00 0%, #ffb74d 100%) !important;
+            color: #000 !important;
+        }
+
+        .sap-table tbody tr:hover td:nth-child(2) {
+            background: linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%) !important;
+            color: #fff !important;
+        }
+
+        .sap-table tbody tr:hover td:nth-child(3) {
+            background: linear-gradient(135deg, #4caf50 0%, #81c784 100%) !important;
+            color: #000 !important;
+        }
+
+        .sap-table tbody tr:hover td:nth-child(4) {
+            background: linear-gradient(135deg, #ff9800 0%, #ffcc02 100%) !important;
+            color: #000 !important;
+        }
+
+        .sap-table tbody tr:hover td:nth-child(5) {
+            background: linear-gradient(135deg, #00acc1 0%, #4dd0e1 100%) !important;
+            color: #000 !important;
+        }
+
+        /* Animación para las filas */
+        .sap-table tbody tr {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Borde especial para la primera y última columna */
+        .sap-table td:first-child {
+            border-left: 3px solid var(--sap-blue);
+        }
+
+        .sap-table td:last-child {
+            border-right: 3px solid var(--sap-success);
+        }
+
+        /* Estilos específicos para celdas */
+        .item-code {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .item-description {
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .part-number {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            font-style: italic;
+        }
+
+        /* Indicadores de stock */
+        .stock-cell {
+            font-weight: 700;
+            text-align: center !important;
+            border-radius: 6px;
+            position: relative;
+        }
+
+        .stock-available {
+            background: linear-gradient(135deg, #c8e6c9 0%, #81c784 100%) !important;
+            color: #1b5e20 !important;
+            box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+        }
+
+        .stock-zero {
+            background: linear-gradient(135deg, #ffcdd2 0%, #e57373 100%) !important;
+            color: #b71c1c !important;
+            box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3);
+        }
+
+        /* Efectos hover específicos para stock */
+        .sap-table tbody tr:hover .stock-available {
+            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%) !important;
+            color: white !important;
+            transform: scale(1.05);
+        }
+
+        .sap-table tbody tr:hover .stock-zero {
+            background: linear-gradient(135deg, #f44336 0%, #ef5350 100%) !important;
+            color: white !important;
+            transform: scale(1.05);
+        }
+
+        /* Badges para países */
+        .country-flag {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 240, 240, 0.9) 100%);
+            border: 1px solid rgba(0, 112, 224, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Efectos de entrada simplificados */
+        .sap-table tbody tr {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+            visibility: visible !important;
+            display: table-row !important;
+            height: auto !important;
+            min-height: 40px !important;
+        }
+
+        /* Force visibility para todas las celdas */
+        .sap-table tbody td {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: table-cell !important;
+        }
+
+        /* Pulsos para indicar actividad */
+        .stock-available::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .stock-zero::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            background: #f44336;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+            }
+        }
+
+        .country-flag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+        }
+
+        /* Paginación */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 16px;
+        }
+
+        .pagination button {
+            padding: 4px 8px;
+            border: 1px solid var(--sap-border);
+            background: var(--sap-white);
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .pagination button:hover {
+            background: var(--sap-light-blue);
+        }
+
+        .pagination button.active {
+            background: var(--sap-blue);
+            color: white;
+            border-color: var(--sap-blue);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Footer BlueSystemIO */
+        .bluesystem-footer {
+            background: var(--sap-gray);
+            border-top: 1px solid var(--sap-border);
+            padding: 8px 16px;
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--sap-medium-gray);
+        }
+
+        .bluesystem-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .bluesystem-logo {
+            color: var(--bluesystem-accent);
+            font-weight: 600;
+        }
+
+        .system-info {
+            display: flex;
+            gap: 16px;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 32px;
+            color: var(--sap-medium-gray);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--sap-border);
+            border-radius: 50%;
+            border-top-color: var(--sap-blue);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Stock Summary Styles */
+        .stock-summary {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid var(--sap-blue);
+            border-radius: 8px;
+            margin: 16px 0;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 112, 224, 0.15);
+        }
+
+        .summary-header {
+            background: linear-gradient(135deg, var(--sap-blue) 0%, #0052cc 100%);
+            color: white;
+            padding: 12px 16px;
+            font-weight: 700;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .summary-content {
+            padding: 20px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .summary-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .summary-item.total {
+            border-left: 4px solid #007bff;
+        }
+
+        .summary-item.available {
+            border-left: 4px solid #28a745;
+        }
+
+        .summary-item.zero {
+            border-left: 4px solid #dc3545;
+        }
+
+        .summary-item.companies {
+            border-left: 4px solid #6f42c1;
+        }
+
+        .summary-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sap-medium-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--sap-text);
+        }
+
+        .summary-item.total .summary-value {
+            color: #007bff;
+        }
+
+        .summary-item.available .summary-value {
+            color: #28a745;
+        }
+
+        .summary-item.zero .summary-value {
+            color: #dc3545;
+        }
+
+        .summary-item.companies .summary-value {
+            color: #6f42c1;
+        }
+
+        .country-breakdown {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .country-breakdown h4 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--sap-text);
+            border-bottom: 2px solid var(--sap-light-blue);
+            padding-bottom: 8px;
+        }
+
+        .country-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .country-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--sap-light-blue);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .country-name {
+            font-weight: 600;
+            color: var(--sap-text);
+        }
+
+        .country-stock {
+            font-weight: 700;
+            color: var(--sap-blue);
+        }
+
+        .country-item.country-available {
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+            border-left: 3px solid #4caf50;
+        }
+
+        .country-item.country-available .country-stock {
+            color: #2e7d32;
+        }
+
+        .country-item.country-zero {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border-left: 3px solid #f44336;
+        }
+
+        .country-item.country-zero .country-stock {
+            color: #c62828;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sap-header {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+
+            .connection-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-container {
+                padding: 8px;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 12px;
+            }
+
+            .country-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header SAP -->
+    <div class="sap-header">
+        <div class="sap-logo-section">
+            <div class="sap-logo">Sistema ERP</div>
+            <div class="sap-title">Consulta de Artículos Multi-Compañía</div>
+        </div>
+        <div class="bluesystem-brand">BlueSystemIO</div>
+        <div class="user-section">
+            <div class="user-info">
+                <span>👤 <span id="username">Usuario</span></span>
+            </div>
+            <button class="logout-btn" onclick="goBack()" style="background: var(--sap-blue); margin-right: 8px;">← Regresar</button>
+            <button class="logout-btn" onclick="logout()">🚪 Cerrar Sesión</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Estado de Conexiones -->
+        <div class="sap-panel">
+            <div class="sap-panel-header">📊 Estado del Sistema Multi-Compañía</div>
+            <div class="sap-panel-content">
+                <div class="connection-grid" id="connectionGrid">
+                    <div class="connection-item">
+                        <div class="connection-status" id="status-GT"></div>
+                        <div class="connection-details">
+                            <div class="connection-country">🇬🇹 Guatemala</div>
+                            <div class="connection-time" id="time-GT">Verificando...</div>
+                        </div>
+                    </div>
+                    <div class="connection-item">
+                        <div class="connection-status" id="status-HO"></div>
+                        <div class="connection-details">
+                            <div class="connection-country">🇭🇳 Honduras</div>
+                            <div class="connection-time" id="time-HO">Verificando...</div>
+                        </div>
+                    </div>
+                    <div class="connection-item">
+                        <div class="connection-status" id="status-PA"></div>
+                        <div class="connection-details">
+                            <div class="connection-country">🇵🇦 Panamá</div>
+                            <div class="connection-time" id="time-PA">Verificando...</div>
+                        </div>
+                    </div>
+                    <div class="connection-item">
+                        <div class="connection-status" id="status-CR"></div>
+                        <div class="connection-details">
+                            <div class="connection-country">🇨🇷 Costa Rica</div>
+                            <div class="connection-time" id="time-CR">Verificando...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Criterios de Búsqueda -->
+        <div class="sap-panel">
+            <div class="sap-panel-header">🔍 Criterios de Selección</div>
+            <div class="sap-panel-content">
+                <form class="search-form" id="searchForm">
+                    <div class="sap-field">
+                        <label class="sap-label">Código de Artículo</label>
+                        <input type="text" class="sap-input" id="itemCode" placeholder="ART-*">
+                    </div>
+                    <div class="sap-field">
+                        <label class="sap-label">Descripción</label>
+                        <input type="text" class="sap-input" id="description" placeholder="*Producto*">
+                    </div>
+                    <div class="sap-field">
+                        <label class="sap-label">Número de Parte</label>
+                        <input type="text" class="sap-input" id="numeroParte" placeholder="NP-*">
+                    </div>
+                    <div class="sap-field">
+                        <label class="sap-label">Compañía</label>
+                        <select class="sap-select" id="company">
+                            <option value="">Todas las Compañías</option>
+                            <option value="GT">Guatemala</option>
+                            <option value="HN">Honduras</option>
+                            <option value="PA">Panamá</option>
+                            <option value="CR">Costa Rica</option>
+                        </select>
+                    </div>
+                </form>
+                <div class="button-group">
+                    <button type="button" class="sap-button" onclick="ejecutarBusqueda()">▶ Ejecutar</button>
+                    <button type="button" class="sap-button secondary" onclick="limpiarSeleccion()">🗑 Limpiar Selección</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="sap-panel">
+            <div class="sap-panel-header" id="resultsHeader">📋 Lista de Artículos</div>
+            <div class="sap-panel-content">
+                <div id="resultsContainer">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <div>Haga clic en "Ejecutar" para buscar artículos...</div>
+                    </div>
+                </div>
+                
+                <!-- Resumen de Stock -->
+                <div id="stockSummary" class="stock-summary" style="display: none;">
+                    <div class="summary-header">📊 Stock Total</div>
+                    <div class="summary-content">
+                        <div class="summary-grid">
+                            <div class="summary-item total" style="grid-column: 1 / -1; text-align: center;">
+                                <div class="summary-label">Stock Total Consolidado</div>
+                                <div class="summary-value" id="totalStock" style="font-size: 32px;">0 unidades</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Paginación -->
+                <div class="pagination" id="pagination" style="display: none;">
+                    <button id="firstPage">⏮ Primera</button>
+                    <button id="prevPage">◀ Anterior</button>
+                    <span id="pageInfo">Página 1 de 1</span>
+                    <button id="nextPage">Siguiente ▶</button>
+                    <button id="lastPage">Última ⏭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="sap-panel">
+            <div class="sap-panel-header">⚡ Acciones</div>
+            <div class="sap-panel-content">
+                <div class="button-group">
+                    <button class="sap-button secondary">📊 Exportar a Excel</button>
+                    <button class="sap-button secondary">📄 Generar Reporte</button>
+                    <button class="sap-button secondary" onclick="actualizarDatos()">🔄 Actualizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer BlueSystemIO -->
+    <div class="bluesystem-footer">
+        <div class="bluesystem-info">
+            <div class="bluesystem-logo">BlueSystemIO</div>
+            <div>Sistema desarrollado por BlueSystemIO - Consultoría en Tecnología</div>
+        </div>
+        <div class="system-info">
+            <div>📞 Soporte</div>
+            <div>📄 Docs</div>
+            <div>Version 1.0.0</div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentResults = [];
+
+        // Check authentication
+        function checkAuth() {
+            const sapAuth = localStorage.getItem('sapAuth');
+            if (!sapAuth) {
+                window.location.href = '/login';
+                return false;
+            }
+            
+            try {
+                const authData = JSON.parse(sapAuth);
+                // Check if we have at least one valid session
+                if (!authData.sessions || authData.successCount === 0) {
+                    localStorage.removeItem('sapAuth');
+                    window.location.href = '/login';
+                    return false;
+                }
+                return authData;
+            } catch (error) {
+                console.error('Error parsing auth data:', error);
+                localStorage.removeItem('sapAuth');
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        // Get valid sessions
+        function getValidSessions() {
+            const authData = checkAuth();
+            if (!authData) return [];
+            
+            const validSessions = [];
+            for (const [companyDB, sessionData] of Object.entries(authData.sessions)) {
+                if (sessionData.success && sessionData.sessionId) {
+                    validSessions.push({
+                        companyDB,
+                        sessionId: sessionData.sessionId
+                    });
+                }
+            }
+            return validSessions;
+        }
+
+        // Load user information
+        function loadUserInfo() {
+            const authData = checkAuth();
+            if (!authData) return;
+
+            // Set username
+            document.getElementById('username').textContent = authData.username;
+        }
+
+        // Go back to dashboard
+        function goBack() {
+            window.location.href = '/dashboard';
+        }
+
+        // Logout function
+        async function logout() {
+            const authData = checkAuth();
+            if (authData && authData.sessions) {
+                // Logout from all SAP sessions
+                for (const [companyDB, sessionData] of Object.entries(authData.sessions)) {
+                    if (sessionData.success && sessionData.sessionId) {
+                        try {
+                            await fetch('/api/sap/logout', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    sessionId: sessionData.sessionId,
+                                    companyDB: companyDB
+                                })
+                            });
+                        } catch (error) {
+                            console.warn('Error logging out from', companyDB, error);
+                        }
+                    }
+                }
+            }
+            
+            localStorage.removeItem('sapAuth');
+            window.location.href = '/login';
+        }
+
+        // Verificar estado de conexiones
+        async function verificarConexiones() {
+            try {
+                const response = await fetch('/api/sap-validation/databases/validate');
+                const data = await response.json();
+                
+                if (data.success) {
+                    data.databases.forEach(db => {
+                        const statusEl = document.getElementById(`status-${db.country}`);
+                        const timeEl = document.getElementById(`time-${db.country}`);
+                        
+                        if (statusEl && timeEl) {
+                            if (db.accessible) {
+                                statusEl.className = 'connection-status';
+                                timeEl.textContent = `Conectado - ${db.responseTime}`;
+                            } else {
+                                statusEl.className = 'connection-status disconnected';
+                                timeEl.textContent = `Error - ${db.error || 'Conexión fallida'}`;
+                            }
+                        } else {
+                            console.warn(`No se encontraron elementos para país: ${db.country}`, {
+                                statusEl: !!statusEl,
+                                timeEl: !!timeEl
+                            });
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error verificando conexiones:', error);
+            }
+        }
+
+        // Ejecutar búsqueda
+        async function ejecutarBusqueda() {
+            const itemCode = document.getElementById('itemCode').value;
+            const description = document.getElementById('description').value;
+            const numeroParte = document.getElementById('numeroParte').value;
+            const company = document.getElementById('company').value;
+
+            // Get valid sessions
+            const validSessions = getValidSessions();
+            if (validSessions.length === 0) {
+                showAlert('No hay sesiones SAP válidas. Por favor, inicie sesión nuevamente.');
+                logout();
+                return;
+            }
+
+            // Filter sessions by company if specified
+            let targetSessions = validSessions;
+            if (company) {
+                const companyMapping = {
+                    'GT': 'SBO_GT_STIA_PROD',
+                    'HN': 'SBO_HO_STIA_PROD',
+                    'PA': 'SBO_PA_STIA_PROD',
+                    'CR': 'SBO_STIACR_PROD'
+                };
+                const targetDB = companyMapping[company];
+                targetSessions = validSessions.filter(s => s.companyDB === targetDB);
+            }
+
+            // Mostrar loading
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Consultando artículos en ${targetSessions.length} base(s) de datos SAP...</div>
+                </div>
+            `;
+
+            try {
+                const allResults = [];
+                const countryNames = {
+                    'SBO_GT_STIA_PROD': 'Guatemala',
+                    'SBO_HO_STIA_PROD': 'Honduras',
+                    'SBO_PA_STIA_PROD': 'Panamá',
+                    'SBO_STIACR_PROD': 'Costa Rica'
+                };
+                const flags = {
+                    'SBO_GT_STIA_PROD': '🇬🇹',
+                    'SBO_HO_STIA_PROD': '🇭🇳',
+                    'SBO_PA_STIA_PROD': '🇵🇦',
+                    'SBO_STIACR_PROD': '🇨🇷'
+                };
+
+                // Query each database
+                for (const session of targetSessions) {
+                    try {
+
+                        const queryParams = {
+                            sessionId: session.sessionId,
+                            companyDB: session.companyDB,
+                            filters: {
+                                itemCode: itemCode || undefined,
+                                itemName: description || undefined,
+                                numeroParte: numeroParte || undefined,
+                                limit: 50
+                            }
+                        };
+
+                        const response = await fetch('/api/sap/items', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(queryParams)
+                        });
+
+                        const result = await response.json();
+                        
+                        if (result.success && result.data && result.data.value) {
+                            result.data.value.forEach(item => {
+                                allResults.push({
+                                    itemCode: item.ItemCode,
+                                    itemName: item.ItemName,
+                                    description: item.ItemName,
+                                    numeroParte: item.U_Cod_Proveedor || 'Sin número de parte',
+                                    stock: item.QuantityOnStock || 0,
+                                    country: countryNames[session.companyDB],
+                                    flag: flags[session.companyDB],
+                                    companyDB: session.companyDB
+                                });
+                            });
+                        }
+                    } catch (error) {
+                        console.warn('Error querying', session.companyDB, error);
+                    }
+                }
+
+                if (allResults.length === 0) {
+                    document.getElementById('resultsContainer').innerHTML = `
+                        <div class="loading">
+                            <div>📭 No se encontraron resultados</div>
+                            <div>Intente modificar los criterios de búsqueda</div>
+                        </div>
+                    `;
+                    document.getElementById('pagination').style.display = 'none';
+                    document.getElementById('resultsHeader').textContent = '📋 Lista de Artículos (0 entradas)';
+                } else {
+                    displayResults(allResults);
+                    calculateAndShowStockSummary(allResults);
+                }
+                
+            } catch (error) {
+                document.getElementById('resultsContainer').innerHTML = `
+                    <div class="loading">
+                        <div style="color: #E74C3C;">❌ Error al consultar las bases de datos</div>
+                        <div>Error: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+
+        // Mostrar resultados
+        function displayResults(results) {
+            currentResults = results;
+            totalPages = Math.ceil(results.length / 50);
+            currentPage = 1;
+
+            const header = document.getElementById('resultsHeader');
+            header.textContent = `📋 Lista de Artículos (${results.length} entradas)`;
+
+            if (results.length === 0) {
+                document.getElementById('resultsContainer').innerHTML = `
+                    <div class="loading">
+                        <div>📭 No se encontraron resultados</div>
+                        <div>Intente modificar los criterios de búsqueda</div>
+                    </div>
+                `;
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            displayPage(1);
+            setupPagination();
+        }
+
+        // Mostrar página específica
+        function displayPage(page) {
+            const startIndex = (page - 1) * 50;
+            const endIndex = Math.min(startIndex + 50, currentResults.length);
+            const pageResults = currentResults.slice(startIndex, endIndex);
+
+            const tableHTML = `
+                <div class="sap-table-container">
+                    <table class="sap-table">
+                        <thead>
+                            <tr>
+                                <th>Compañía</th>
+                                <th>Código de Artículo</th>
+                                <th>Descripción</th>
+                                <th>Número de Parte</th>
+                                <th>Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${pageResults.map(item => {
+                                const stockValue = item.stock || 0;
+                                const stockClass = stockValue > 0 ? 'stock-available' : 'stock-zero';
+                                const stockIcon = stockValue > 0 ? '📦' : '❌';
+                                
+                                return `
+                                <tr>
+                                    <td><span class="country-flag">${item.flag || '🏢'} ${item.country || 'N/A'}</span></td>
+                                    <td class="item-code">${item.itemCode || 'N/A'}</td>
+                                    <td class="item-description">${item.itemName || item.description || 'N/A'}</td>
+                                    <td class="part-number">${item.numeroParte || 'Sin número de parte'}</td>
+                                    <td class="stock-cell ${stockClass}">${stockIcon} ${stockValue} uni</td>
+                                </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('resultsContainer').innerHTML = tableHTML;
+            currentPage = page;
+            updatePaginationInfo();
+        }
+
+        // Configurar paginación
+        function setupPagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.style.display = totalPages > 1 ? 'flex' : 'none';
+
+            document.getElementById('firstPage').onclick = () => displayPage(1);
+            document.getElementById('prevPage').onclick = () => displayPage(Math.max(1, currentPage - 1));
+            document.getElementById('nextPage').onclick = () => displayPage(Math.min(totalPages, currentPage + 1));
+            document.getElementById('lastPage').onclick = () => displayPage(totalPages);
+
+            updatePaginationInfo();
+        }
+
+        // Actualizar información de paginación
+        function updatePaginationInfo() {
+            document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages}`;
+            document.getElementById('firstPage').disabled = currentPage === 1;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages;
+            document.getElementById('lastPage').disabled = currentPage === totalPages;
+        }
+
+        // Calcular y mostrar resumen de stock
+        function calculateAndShowStockSummary(results) {
+            // Agrupar por código de artículo único
+            const itemGroups = {};
+            const uniqueCountries = new Set();
+
+            results.forEach(item => {
+                const itemCode = item.itemCode || 'N/A';
+                const stock = item.stock || 0;
+                const country = item.country || 'N/A';
+                
+                uniqueCountries.add(country);
+                
+                // Agrupar por código de artículo
+                if (!itemGroups[itemCode]) {
+                    itemGroups[itemCode] = {
+                        itemCode: itemCode,
+                        itemName: item.itemName || item.description,
+                        numeroParte: item.numeroParte,
+                        totalStock: 0,
+                        stockByCountry: {},
+                        hasStock: false,
+                        countries: new Set()
+                    };
+                }
+                
+                itemGroups[itemCode].totalStock += stock;
+                itemGroups[itemCode].stockByCountry[country] = (itemGroups[itemCode].stockByCountry[country] || 0) + stock;
+                itemGroups[itemCode].countries.add(country);
+                
+                if (stock > 0) {
+                    itemGroups[itemCode].hasStock = true;
+                }
+            });
+
+            // Calcular totales consolidados POR ARTÍCULO ÚNICO
+            const consolidatedSummary = {
+                totalUniqueItems: Object.keys(itemGroups).length,
+                totalConsolidatedStock: 0,
+                availableUniqueItems: 0,
+                zeroUniqueItems: 0,
+                countryBreakdown: {}
+            };
+
+            // Procesar cada artículo único
+            Object.values(itemGroups).forEach(group => {
+                // Para cada artículo, SUMAR todo el stock de todos los países
+                const totalStockAllCountries = group.totalStock;
+                
+                consolidatedSummary.totalConsolidatedStock += totalStockAllCountries;
+                
+                if (totalStockAllCountries > 0) {
+                    consolidatedSummary.availableUniqueItems++;
+                } else {
+                    consolidatedSummary.zeroUniqueItems++;
+                }
+
+                // Para el breakdown por país, mostrar artículos únicos disponibles en cada país
+                Object.entries(group.stockByCountry).forEach(([country, stock]) => {
+                    if (!consolidatedSummary.countryBreakdown[country]) {
+                        consolidatedSummary.countryBreakdown[country] = {
+                            uniqueItemsAvailable: 0,
+                            totalStockInCountry: 0,
+                            flag: results.find(r => r.country === country)?.flag || '🏢'
+                        };
+                    }
+                    
+                    if (stock > 0) {
+                        consolidatedSummary.countryBreakdown[country].uniqueItemsAvailable++;
+                    }
+                    consolidatedSummary.countryBreakdown[country].totalStockInCountry += stock;
+                });
+            });
+
+            // Actualizar solo el stock total
+            document.getElementById('totalStock').textContent = `${consolidatedSummary.totalConsolidatedStock.toLocaleString()} unidades`;
+            document.getElementById('stockSummary').style.display = 'block';
+        }
+
+        // Limpiar selección
+        function limpiarSeleccion() {
+            document.getElementById('searchForm').reset();
+            document.getElementById('resultsContainer').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Haga clic en "Ejecutar" para buscar artículos...</div>
+                </div>
+            `;
+            document.getElementById('pagination').style.display = 'none';
+            document.getElementById('stockSummary').style.display = 'none';
+            document.getElementById('resultsHeader').textContent = '📋 Lista de Artículos';
+        }
+
+        // Show alert message
+        function showAlert(message, type = 'error') {
+            // Create or get existing alert container
+            let alertContainer = document.getElementById('alertContainer');
+            if (!alertContainer) {
+                alertContainer = document.createElement('div');
+                alertContainer.id = 'alertContainer';
+                alertContainer.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 10000;
+                    max-width: 400px;
+                `;
+                document.body.appendChild(alertContainer);
+            }
+
+            // Create alert element
+            const alert = document.createElement('div');
+            alert.style.cssText = `
+                padding: 12px 16px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+                font-size: 14px;
+                border: 1px solid;
+                animation: slideIn 0.3s ease-out;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+
+            // Style based on type
+            if (type === 'success') {
+                alert.style.background = '#D4F5D4';
+                alert.style.borderColor = '#107E3E';
+                alert.style.color = '#107E3E';
+            } else if (type === 'warning') {
+                alert.style.background = '#FFF3CD';
+                alert.style.borderColor = '#F4A261';
+                alert.style.color = '#8B4513';
+            } else {
+                alert.style.background = '#FFE6E6';
+                alert.style.borderColor = '#E74C3C';
+                alert.style.color = '#E74C3C';
+            }
+
+            alert.textContent = message;
+            alertContainer.appendChild(alert);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.style.animation = 'slideOut 0.3s ease-out forwards';
+                    setTimeout(() => {
+                        if (alert.parentNode) {
+                            alertContainer.removeChild(alert);
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+
+        // Actualizar datos
+        function actualizarDatos() {
+            verificarConexiones();
+            if (currentResults.length > 0) {
+                ejecutarBusqueda();
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!checkAuth()) return;
+            
+            loadUserInfo();
+            verificarConexiones();
+            
+            // Auto-refresh connections every 30 seconds
+            setInterval(verificarConexiones, 30000);
+        });
+    </script>
+</body>
+</html>

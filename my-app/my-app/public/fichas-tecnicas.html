@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fichas Técnicas - SAP Service Layer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="fas fa-microchip me-2"></i>Fichas Técnicas
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/dashboard">
+                    <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Formulario para Nueva Ficha -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-plus-circle me-2"></i>Nueva Ficha Técnica
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="fichaForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="code" class="form-label">Código *</label>
+                                    <input type="text" class="form-control" id="code" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="numArticulo" class="form-label">Núm. Artículo *</label>
+                                    <input type="text" class="form-control" id="numArticulo" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="descArticulo" class="form-label">Descripción del Artículo</label>
+                                <input type="text" class="form-control" id="descArticulo">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="categoria" class="form-label">Categoría</label>
+                                    <select class="form-select" id="categoria">
+                                        <option value="CON">CON - Consumibles</option>
+                                        <option value="CRI">CRI - Críticos</option>
+                                        <option value="REP">REP - Repuestos</option>
+                                        <option value="HER">HER - Herramientas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="tipo" class="form-label">Tipo</label>
+                                    <select class="form-select" id="tipo">
+                                        <option value="EL">EL - Eléctrico</option>
+                                        <option value="TR">TR - Transmisión</option>
+                                        <option value="HI">HI - Hidráulico</option>
+                                        <option value="ME">ME - Mecánico</option>
+                                        <option value="NE">NE - Neumático</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="garantia" class="form-label">Garantía</label>
+                                    <select class="form-select" id="garantia">
+                                        <option value="SI">SI - Con Garantía</option>
+                                        <option value="NO">NO - Sin Garantía</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="stock" class="form-label">Stock</label>
+                                    <input type="number" class="form-control" id="stock" step="0.01">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="material" class="form-label">Material</label>
+                                <input type="text" class="form-control" id="material">
+                            </div>
+                            <div class="mb-3">
+                                <label for="descripcionTec" class="form-label">Descripción Técnica</label>
+                                <textarea class="form-control" id="descripcionTec" rows="3"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="proveedor" class="form-label">Código Proveedor</label>
+                                    <input type="text" class="form-control" id="proveedor">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="nproveedor" class="form-label">Nombre Proveedor</label>
+                                    <input type="text" class="form-control" id="nproveedor">
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Crear Ficha Técnica
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista y Consulta de Fichas -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>Fichas Técnicas Existentes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchInput" placeholder="Buscar por código o descripción...">
+                                <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button class="btn btn-outline-primary" type="button" id="refreshBtn">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="loadingIndicator" class="loading d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2">Cargando fichas técnicas...</p>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="fichasTable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Artículo</th>
+                                        <th>Descripción</th>
+                                        <th>Categoría</th>
+                                        <th>Tipo</th>
+                                        <th>Garantía</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fichasTableBody">
+                                    <!-- Los datos se cargarán aquí -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Estadísticas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h3 id="totalFichas">0</h3>
+                                        <p class="mb-0">Total Fichas</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h3 id="fichasConGarantia">0</h3>
+                                        <p class="mb-0">Con Garantía</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body">
+                                        <h3 id="categoriasMasUsadas">CON</h3>
+                                        <p class="mb-0">Categoría Principal</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body">
+                                        <h3 id="tiposMasUsados">EL</h3>
+                                        <p class="mb-0">Tipo Principal</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Ver/Editar Ficha -->
+    <div class="modal fade" id="fichaModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye me-2"></i>Detalle de Ficha Técnica
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="fichaModalBody">
+                    <!-- Contenido del modal se carga dinámicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="editFichaBtn">
+                        <i class="fas fa-edit me-2"></i>Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = '/api/sap';
+        let currentSession = sessionStorage.getItem('sapSession');
+        let currentCompany = 'SBO_GT_STIA_TEST';
+        
+        // Verificar sesión al cargar
+        if (!currentSession) {
+            alert('No hay sesión activa. Redirigiendo al login...');
+            window.location.href = '/login';
+        }
+
+        // Formulario para nueva ficha
+        document.getElementById('fichaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await createFicha();
+        });
+
+        // Botones de búsqueda y refresh
+        document.getElementById('searchBtn').addEventListener('click', searchFichas);
+        document.getElementById('refreshBtn').addEventListener('click', loadFichas);
+
+        // Cargar fichas al iniciar
+        loadFichas();
+
+        async function createFicha() {
+            const formData = {
+                Code: document.getElementById('code').value,
+                NumArticulo: document.getElementById('numArticulo').value,
+                DescArticulo: document.getElementById('descArticulo').value,
+                Categoria: document.getElementById('categoria').value,
+                Tipo: document.getElementById('tipo').value,
+                Garantia: document.getElementById('garantia').value,
+                Stock: document.getElementById('stock').value || null,
+                Material: document.getElementById('material').value,
+                DescripcionTec: document.getElementById('descripcionTec').value,
+                Proveedor: document.getElementById('proveedor').value,
+                Nproveedor: document.getElementById('nproveedor').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/populate-fff`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: currentSession,
+                        companyDB: currentCompany,
+                        data: formData
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Ficha técnica creada exitosamente');
+                    document.getElementById('fichaForm').reset();
+                    loadFichas();
+                } else {
+                    alert('Error al crear ficha técnica: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error de conexión: ' + error.message);
+            }
+        }
+
+        async function loadFichas() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`https://sap-stiacmzdr-sl.skyinone.net:50000/b1s/v1/FichasTecn`, {
+                    headers: {
+                        'Cookie': `B1SESSION=${currentSession}`,
+                        'CompanyDB': currentCompany,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayFichas(data.value || []);
+                    updateStatistics(data.value || []);
+                } else {
+                    throw new Error('Error al cargar fichas técnicas');
+                }
+            } catch (error) {
+                alert('Error al cargar fichas: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayFichas(fichas) {
+            const tbody = document.getElementById('fichasTableBody');
+            tbody.innerHTML = '';
+
+            fichas.forEach(ficha => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${ficha.Code || ''}</td>
+                    <td>${ficha.U_NumArticulo || ''}</td>
+                    <td>${truncateText(ficha.U_DescArticulo || '', 30)}</td>
+                    <td><span class="badge bg-secondary">${ficha.U_Categoria || ''}</span></td>
+                    <td><span class="badge bg-info">${ficha.U_Tipo || ''}</span></td>
+                    <td><span class="badge ${ficha.U_Garantia === 'SI' ? 'bg-success' : 'bg-warning'}">${ficha.U_Garantia || ''}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewFicha('${ficha.Code}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStatistics(fichas) {
+            document.getElementById('totalFichas').textContent = fichas.length;
+            
+            const conGarantia = fichas.filter(f => f.U_Garantia === 'SI').length;
+            document.getElementById('fichasConGarantia').textContent = conGarantia;
+            
+            // Categoría más usada
+            const categorias = fichas.reduce((acc, f) => {
+                acc[f.U_Categoria] = (acc[f.U_Categoria] || 0) + 1;
+                return acc;
+            }, {});
+            const categoriaPrincipal = Object.keys(categorias).reduce((a, b) => 
+                categorias[a] > categorias[b] ? a : b, 'CON');
+            document.getElementById('categoriasMasUsadas').textContent = categoriaPrincipal;
+            
+            // Tipo más usado
+            const tipos = fichas.reduce((acc, f) => {
+                acc[f.U_Tipo] = (acc[f.U_Tipo] || 0) + 1;
+                return acc;
+            }, {});
+            const tipoPrincipal = Object.keys(tipos).reduce((a, b) => 
+                tipos[a] > tipos[b] ? a : b, 'EL');
+            document.getElementById('tiposMasUsados').textContent = tipoPrincipal;
+        }
+
+        function searchFichas() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#fichasTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function viewFicha(code) {
+            // Aquí se implementaría la vista detallada de la ficha
+            alert(`Ver detalles de ficha: ${code}`);
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loadingIndicator');
+            const table = document.getElementById('fichasTable');
+            
+            if (show) {
+                loading.classList.remove('d-none');
+                table.style.opacity = '0.5';
+            } else {
+                loading.classList.add('d-none');
+                table.style.opacity = '1';
+            }
+        }
+
+        function truncateText(text, maxLength) {
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+    </script>
+</body>
+</html>

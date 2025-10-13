@@ -1,0 +1,119 @@
+# Development override for Docker Compose
+# Enables hot-reload, debugging, and development-specific configurations
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      target: development
+      args:
+        NODE_VERSION: ${NODE_VERSION:-18}
+    container_name: my-app-dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-myapp_dev}
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: debug
+      DEBUG: ${DEBUG:-app:*}
+      CHOKIDAR_USEPOLLING: true
+      CHOKIDAR_INTERVAL: 1000
+    ports:
+      - "3000:3000"
+      - "9229:9229"  # Node.js debugger port
+    volumes:
+      # Bind mount source code for hot-reload
+      - ./src:/app/src:cached
+      - ./public:/app/public:cached
+      - ./package.json:/app/package.json:ro
+      - ./package-lock.json:/app/package-lock.json:ro
+      # Named volume for node_modules to avoid conflicts
+      - node_modules_cache:/app/node_modules
+      # Logs volume for development
+      - ./logs:/app/logs
+    command: ["npm", "run", "dev"]
+    stdin_open: true
+    tty: true
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    container_name: my-app-postgres-dev
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-myapp_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ./scripts/seed-data.sql:/docker-entrypoint-initdb.d/seed-data.sql:ro
+
+  redis:
+    container_name: my-app-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+
+  # Additional development services
+  maildev:
+    image: maildev/maildev:latest
+    container_name: my-app-maildev
+    ports:
+      - "1080:1080"  # Web interface
+      - "1025:1025"  # SMTP server
+    networks:
+      - app-network
+    environment:
+      MAILDEV_WEB_PORT: 1080
+      MAILDEV_SMTP_PORT: 1025
+
+  # Database administration tool
+  adminer:
+    image: adminer:latest
+    container_name: my-app-adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha-dark
+    depends_on:
+      - postgres
+
+  # Redis management interface
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: my-app-redis-commander
+    ports:
+      - "8081:8081"
+    networks:
+      - app-network
+    environment:
+      REDIS_HOSTS: local:redis:6379
+      HTTP_USER: ${REDIS_COMMANDER_USER:-admin}
+      HTTP_PASSWORD: ${REDIS_COMMANDER_PASSWORD:-admin}
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  node_modules_cache:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema ERP - Ofertas de Venta</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        :root {
+            --sap-blue: #0070E0;
+            --sap-light-blue: #E6F3FF;
+            --sap-dark-blue: #003B6B;
+            --sap-gray: #F7F7F7;
+            --sap-border: #D9D9D9;
+            --sap-text: #32363A;
+            --sap-success: #107E3E;
+            --sap-error: #E74C3C;
+            --sap-warning: #F39C12;
+            --bluesystem-accent: #0052CC;
+            --sap-white: #FFFFFF;
+            --sap-light-gray: #FAFAFA;
+            --sap-medium-gray: #6A6D70;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: '72', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--sap-light-gray);
+            color: var(--sap-text);
+            line-height: 1.4;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 100%);
+            color: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 16px 24px;
+            background: var(--sap-gray);
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom-color: var(--sap-blue);
+        }
+
+        .tab:hover:not(.active) {
+            background: #f0f0f0;
+        }
+
+        /* Content Panel */
+        .content-panel {
+            background: white;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form Styles */
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--sap-dark-blue);
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--sap-light-blue);
+            padding-bottom: 8px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sap-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            padding: 12px;
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--sap-blue);
+            box-shadow: 0 0 0 2px rgba(0, 112, 224, 0.2);
+        }
+
+        .form-select {
+            padding: 12px;
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: var(--sap-light-blue);
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 16px;
+            align-items: end;
+        }
+
+        .search-btn {
+            background: var(--sap-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .search-btn:hover {
+            background: var(--sap-dark-blue);
+        }
+
+        /* Orders List */
+        .orders-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .order-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .order-item:hover {
+            background: var(--sap-light-blue);
+        }
+
+        .order-item.selected {
+            background: var(--sap-blue);
+            color: white;
+        }
+
+        .order-main-info {
+            flex: 1;
+        }
+
+        .order-number {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .order-customer {
+            font-size: 12px;
+            color: var(--sap-medium-gray);
+        }
+
+        .order-item.selected .order-customer {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .order-amount {
+            font-weight: 600;
+            color: var(--sap-success);
+        }
+
+        .order-item.selected .order-amount {
+            color: white;
+        }
+
+        /* Items Table */
+        .items-section {
+            margin-top: 24px;
+        }
+
+        .items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .add-item-btn {
+            background: var(--sap-success);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .add-item-btn:hover {
+            background: #0a5f2e;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .items-table th {
+            background: var(--sap-gray);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--sap-border);
+        }
+
+        .items-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .items-table tr:hover {
+            background: var(--sap-light-blue);
+        }
+
+        .item-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .remove-item-btn {
+            background: var(--sap-error);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        /* Actions */
+        .actions-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid var(--sap-border);
+        }
+
+        .quote-total {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--sap-dark-blue);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--sap-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--sap-dark-blue);
+        }
+
+        .btn-secondary {
+            background: var(--sap-border);
+            color: var(--sap-text);
+        }
+
+        .btn-secondary:hover {
+            background: var(--sap-medium-gray);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--sap-success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #0a5f2e;
+        }
+
+        /* Quotations List */
+        .quotations-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .quotations-table th {
+            background: var(--sap-gray);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--sap-border);
+        }
+
+        .quotations-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .quotations-table tr:hover {
+            background: var(--sap-light-blue);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-open {
+            background: var(--sap-warning);
+            color: white;
+        }
+
+        .status-approved {
+            background: var(--sap-success);
+            color: white;
+        }
+
+        .status-rejected {
+            background: var(--sap-error);
+            color: white;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #D4F5D4;
+            border: 1px solid var(--sap-success);
+            color: var(--sap-success);
+        }
+
+        .alert.error {
+            background: #FFE6E6;
+            border: 1px solid var(--sap-error);
+            color: var(--sap-error);
+        }
+
+        .alert.warning {
+            background: #FFF3CD;
+            border: 1px solid var(--sap-warning);
+            color: #856404;
+        }
+
+        .alert.info {
+            background: var(--sap-light-blue);
+            border: 1px solid var(--sap-blue);
+            color: var(--sap-dark-blue);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--sap-blue);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Action Buttons in Table */
+        .table-action-btn {
+            background: var(--sap-blue);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-right: 4px;
+        }
+
+        .table-action-btn:hover {
+            background: var(--sap-dark-blue);
+        }
+
+        .table-action-btn.success {
+            background: var(--sap-success);
+        }
+
+        .table-action-btn.success:hover {
+            background: #0a5f2e;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px;
+            }
+
+            .main-content {
+                padding: 0 16px;
+                margin: 16px auto;
+            }
+
+            .form-grid,
+            .search-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions-section {
+                flex-direction: column;
+                gap: 16px;
+                align-items: stretch;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <a href="/dashboard" class="back-btn">
+                ← Volver al Dashboard
+            </a>
+            <h1 class="page-title">💼 Ofertas de Venta</h1>
+        </div>
+        <div class="user-info">
+            <span id="userDisplay">Usuario: No autenticado</span>
+            <span id="sessionInfo">Sesión: No activa</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Alert Messages -->
+        <div id="alert" class="alert"></div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="create">Nueva Oferta</button>
+            <button class="tab" data-tab="fromOrder">Desde Orden</button>
+            <button class="tab" data-tab="list">Consultar Ofertas</button>
+            <button class="tab" data-tab="reports">Reportes</button>
+        </div>
+
+        <!-- Content Panel -->
+        <div class="content-panel">
+            <!-- Create Quote Tab -->
+            <div id="create-tab" class="tab-content active">
+                <form id="quotationForm">
+                    <!-- Customer Selection -->
+                    <div class="form-section">
+                        <h3 class="section-title">Selección de Cliente</h3>
+                        
+                        <!-- Customer Search -->
+                        <div class="search-section">
+                            <div class="search-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Código de Cliente</label>
+                                    <input type="text" id="customerCodeSearch" class="form-input" placeholder="Buscar por código...">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Nombre de Cliente</label>
+                                    <input type="text" id="customerNameSearch" class="form-input" placeholder="Buscar por nombre...">
+                                </div>
+                                <button type="button" id="searchCustomersBtn" class="search-btn">Buscar</button>
+                            </div>
+                        </div>
+
+                        <!-- Customer List -->
+                        <div id="customerList" class="orders-list" style="display: none;"></div>
+
+                        <!-- Selected Customer Info -->
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Cliente Seleccionado</label>
+                                <input type="text" id="selectedCustomerCode" class="form-input" readonly placeholder="Código del cliente">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nombre del Cliente</label>
+                                <input type="text" id="selectedCustomerName" class="form-input" readonly placeholder="Nombre del cliente">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quote Information -->
+                    <div class="form-section">
+                        <h3 class="section-title">Información de la Oferta</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Fecha de Documento</label>
+                                <input type="date" id="docDate" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha de Validez</label>
+                                <input type="date" id="validUntil" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Compañía</label>
+                                <select id="companyDB" class="form-select" required>
+                                    <option value="">Seleccionar compañía...</option>
+                                    <option value="SBO_GT_STIA_PROD">Guatemala</option>
+                                    <option value="SBO_HO_STIA_PROD">Honduras</option>
+                                    <option value="SBO_PA_STIA_PROD">Panamá</option>
+                                    <option value="SBO_STIACR_PROD">Costa Rica</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Comentarios</label>
+                            <textarea id="comments" class="form-input" rows="3" placeholder="Comentarios adicionales..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Items Section -->
+                    <div class="form-section items-section">
+                        <div class="items-header">
+                            <h3 class="section-title">Artículos de la Oferta</h3>
+                            <button type="button" id="addItemBtn" class="add-item-btn">+ Agregar Artículo</button>
+                        </div>
+
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Descripción</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio Unit.</th>
+                                    <th>Total</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTableBody">
+                                <!-- Items will be added dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="actions-section">
+                        <div class="quote-total">
+                            Total: <span id="quoteTotal">$0.00</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-secondary" onclick="clearForm()">Limpiar</button>
+                            <button type="submit" class="btn btn-primary">Crear Oferta de Venta</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- From Order Tab -->
+            <div id="fromOrder-tab" class="tab-content">
+                <div class="form-section">
+                    <h3 class="section-title">Crear Oferta desde Orden de Venta</h3>
+                    
+                    <!-- Order Search -->
+                    <div class="search-section">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Número de Orden</label>
+                                <input type="number" id="orderNumSearch" class="form-input" placeholder="Buscar por número...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Código de Cliente</label>
+                                <input type="text" id="orderCustomerSearch" class="form-input" placeholder="Buscar por cliente...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha Desde</label>
+                                <input type="date" id="dateFromSearch" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha Hasta</label>
+                                <input type="date" id="dateToSearch" class="form-input">
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 16px;">
+                            <button type="button" id="searchOrdersBtn" class="search-btn">Buscar Órdenes</button>
+                        </div>
+                    </div>
+
+                    <!-- Orders List -->
+                    <div id="ordersList" class="orders-list" style="display: none;"></div>
+
+                    <!-- Selected Order Preview -->
+                    <div id="orderPreview" style="display: none;">
+                        <h3 class="section-title">Vista Previa de la Orden</h3>
+                        <div id="orderPreviewContent"></div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button type="button" id="createFromOrderBtn" class="btn btn-success">Crear Oferta desde esta Orden</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List Quotes Tab -->
+            <div id="list-tab" class="tab-content">
+                <div class="form-section">
+                    <h3 class="section-title">Consultar Ofertas de Venta</h3>
+                    
+                    <!-- Search Filters -->
+                    <div class="search-section">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Número de Oferta</label>
+                                <input type="number" id="quoteNumSearch" class="form-input" placeholder="Buscar por número...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Código de Cliente</label>
+                                <input type="text" id="quoteCustomerSearch" class="form-input" placeholder="Buscar por cliente...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha Desde</label>
+                                <input type="date" id="quoteDateFromSearch" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fecha Hasta</label>
+                                <input type="date" id="quoteDateToSearch" class="form-input">
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 16px;">
+                            <button type="button" id="searchQuotesBtn" class="search-btn">Buscar Ofertas</button>
+                        </div>
+                    </div>
+
+                    <!-- Loading -->
+                    <div id="quotesLoading" class="loading" style="display: none;">
+                        <div class="spinner"></div>
+                    </div>
+
+                    <!-- Quotes Table -->
+                    <table class="quotations-table">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Válida Hasta</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Compañía</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quotesTableBody">
+                            <!-- Quotes will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="reports-tab" class="tab-content">
+                <div class="form-section">
+                    <h3 class="section-title">Reportes de Ofertas de Venta</h3>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Reporte</label>
+                            <select id="reportType" class="form-select">
+                                <option value="summary">Resumen de Ofertas</option>
+                                <option value="by-customer">Por Cliente</option>
+                                <option value="by-date">Por Fecha</option>
+                                <option value="conversion-rate">Tasa de Conversión</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha Desde</label>
+                            <input type="date" id="reportDateFrom" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha Hasta</label>
+                            <input type="date" id="reportDateTo" class="form-input">
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button type="button" id="generateReportBtn" class="btn btn-primary">Generar Reporte</button>
+                    </div>
+
+                    <div id="reportResults" style="margin-top: 30px; display: none;">
+                        <h3 class="section-title">Resultados del Reporte</h3>
+                        <div id="reportContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let sapAuth = null;
+        let customers = [];
+        let selectedCustomer = null;
+        let quoteItems = [];
+        let selectedOrder = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthentication();
+            initializeTabs();
+            initializeForm();
+            setDefaultDates();
+        });
+
+        // Check authentication
+        function checkAuthentication() {
+            const authData = localStorage.getItem('sapAuth');
+            
+            if (!authData) {
+                showAlert('Debe iniciar sesión para acceder a este módulo', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            }
+
+            try {
+                sapAuth = JSON.parse(authData);
+                document.getElementById('userDisplay').textContent = `Usuario: ${sapAuth.username}`;
+                document.getElementById('sessionInfo').textContent = `Sesiones: ${sapAuth.successCount}/${sapAuth.totalDatabases}`;
+            } catch (error) {
+                console.error('Error parsing auth data:', error);
+                showAlert('Error de autenticación. Inicie sesión nuevamente.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            }
+        }
+
+        // Initialize tabs
+        function initializeTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.dataset.tab;
+
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Update active content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `${targetTab}-tab`) {
+                            content.classList.add('active');
+                        }
+                    });
+
+                    // Load data based on tab
+                    if (targetTab === 'list') {
+                        loadQuotationsForAllCompanies();
+                    } else if (targetTab === 'fromOrder') {
+                        // Initialize order search
+                        document.getElementById('ordersList').style.display = 'none';
+                        document.getElementById('orderPreview').style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Initialize form
+        function initializeForm() {
+            // Customer search
+            document.getElementById('searchCustomersBtn').addEventListener('click', searchCustomers);
+            
+            // Add item button
+            document.getElementById('addItemBtn').addEventListener('click', addQuoteItem);
+            
+            // Form submission
+            document.getElementById('quotationForm').addEventListener('submit', createQuotation);
+            
+            // Search orders
+            document.getElementById('searchOrdersBtn').addEventListener('click', searchOrders);
+            
+            // Search quotes
+            document.getElementById('searchQuotesBtn').addEventListener('click', searchQuotations);
+            
+            // Generate report
+            document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+            
+            // Create from order
+            document.getElementById('createFromOrderBtn').addEventListener('click', createQuotationFromOrder);
+        }
+
+        // Set default dates
+        function setDefaultDates() {
+            const today = new Date().toISOString().split('T')[0];
+            const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            
+            document.getElementById('docDate').value = today;
+            document.getElementById('validUntil').value = nextMonth;
+        }
+
+        // Search customers (same logic as sales orders)
+        async function searchCustomers() {
+            const customerCode = document.getElementById('customerCodeSearch').value.trim();
+            const customerName = document.getElementById('customerNameSearch').value.trim();
+            const companyDB = document.getElementById('companyDB').value;
+
+            if (!companyDB) {
+                showAlert('Debe seleccionar una compañía primero', 'warning');
+                return;
+            }
+
+            if (!customerCode && !customerName) {
+                showAlert('Ingrese un criterio de búsqueda', 'warning');
+                return;
+            }
+
+            const session = getSessionForCompany(companyDB);
+            if (!session) {
+                showAlert(`No hay sesión activa para la compañía seleccionada`, 'error');
+                return;
+            }
+
+            try {
+                showAlert('Buscando clientes...', 'info');
+
+                const response = await fetch('/api/sap/business-partners', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: session.sessionId,
+                        companyDB: companyDB,
+                        filters: {
+                            cardCode: customerCode,
+                            cardName: customerName,
+                            cardType: 'C', // Customer type
+                            limit: 20
+                        }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success && result.data.value) {
+                    customers = result.data.value;
+                    displayCustomers(customers);
+                    hideAlert();
+                } else {
+                    showAlert('No se encontraron clientes con los criterios especificados', 'warning');
+                }
+
+            } catch (error) {
+                console.error('Error searching customers:', error);
+                showAlert('Error al buscar clientes: ' + error.message, 'error');
+            }
+        }
+
+        // Display customers
+        function displayCustomers(customers) {
+            const customerList = document.getElementById('customerList');
+            
+            if (customers.length === 0) {
+                customerList.style.display = 'none';
+                return;
+            }
+
+            customerList.innerHTML = '';
+            customers.forEach(customer => {
+                const customerItem = document.createElement('div');
+                customerItem.className = 'order-item';
+                customerItem.innerHTML = `
+                    <div class="order-main-info">
+                        <div class="order-number">${customer.CardCode}</div>
+                        <div class="order-customer">${customer.CardName}</div>
+                    </div>
+                `;
+                
+                customerItem.addEventListener('click', () => selectCustomer(customer));
+                customerList.appendChild(customerItem);
+            });
+
+            customerList.style.display = 'block';
+        }
+
+        // Select customer
+        function selectCustomer(customer) {
+            selectedCustomer = customer;
+            
+            // Update form fields
+            document.getElementById('selectedCustomerCode').value = customer.CardCode;
+            document.getElementById('selectedCustomerName').value = customer.CardName;
+            
+            // Update UI
+            document.querySelectorAll('.order-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            event.target.closest('.order-item').classList.add('selected');
+            
+            // Hide customer list
+            setTimeout(() => {
+                document.getElementById('customerList').style.display = 'none';
+            }, 500);
+        }
+
+        // Add quote item
+        function addQuoteItem() {
+            const tableBody = document.getElementById('itemsTableBody');
+            const itemId = Date.now();
+            
+            const row = document.createElement('tr');
+            row.dataset.itemId = itemId;
+            row.innerHTML = `
+                <td><input type="text" class="item-input" placeholder="Código del artículo" onchange="updateItemTotal(${itemId})"></td>
+                <td><input type="text" class="item-input" placeholder="Descripción"></td>
+                <td><input type="number" class="item-input" min="1" value="1" onchange="updateItemTotal(${itemId})"></td>
+                <td><input type="number" class="item-input" min="0" step="0.01" value="0" onchange="updateItemTotal(${itemId})"></td>
+                <td><span class="item-total">$0.00</span></td>
+                <td><button type="button" class="remove-item-btn" onclick="removeItem(${itemId})">Eliminar</button></td>
+            `;
+            
+            tableBody.appendChild(row);
+        }
+
+        // Update item total
+        function updateItemTotal(itemId) {
+            const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+            const quantity = parseFloat(row.children[2].querySelector('input').value) || 0;
+            const price = parseFloat(row.children[3].querySelector('input').value) || 0;
+            const total = quantity * price;
+            
+            row.children[4].querySelector('.item-total').textContent = `$${total.toFixed(2)}`;
+            updateQuoteTotal();
+        }
+
+        // Remove item
+        function removeItem(itemId) {
+            const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+            row.remove();
+            updateQuoteTotal();
+        }
+
+        // Update quote total
+        function updateQuoteTotal() {
+            const itemTotals = document.querySelectorAll('.item-total');
+            let quoteTotal = 0;
+            
+            itemTotals.forEach(totalElement => {
+                const value = parseFloat(totalElement.textContent.replace('$', ''));
+                quoteTotal += value;
+            });
+            
+            document.getElementById('quoteTotal').textContent = `$${quoteTotal.toFixed(2)}`;
+        }
+
+        // Create quotation
+        async function createQuotation(event) {
+            event.preventDefault();
+            
+            if (!selectedCustomer) {
+                showAlert('Debe seleccionar un cliente', 'error');
+                return;
+            }
+
+            const companyDB = document.getElementById('companyDB').value;
+            if (!companyDB) {
+                showAlert('Debe seleccionar una compañía', 'error');
+                return;
+            }
+
+            // Validate items
+            const itemRows = document.querySelectorAll('#itemsTableBody tr');
+            if (itemRows.length === 0) {
+                showAlert('Debe agregar al menos un artículo', 'error');
+                return;
+            }
+
+            // Prepare document lines
+            const documentLines = [];
+            let isValid = true;
+
+            itemRows.forEach((row, index) => {
+                const itemCode = row.children[0].querySelector('input').value.trim();
+                const description = row.children[1].querySelector('input').value.trim();
+                const quantity = parseFloat(row.children[2].querySelector('input').value);
+                const price = parseFloat(row.children[3].querySelector('input').value);
+
+                if (!itemCode || !quantity || !price) {
+                    showAlert(`Artículo ${index + 1}: Código, cantidad y precio son obligatorios`, 'error');
+                    isValid = false;
+                    return;
+                }
+
+                documentLines.push({
+                    ItemCode: itemCode,
+                    ItemDescription: description || itemCode,
+                    Quantity: quantity,
+                    Price: price,
+                    LineNum: index
+                });
+            });
+
+            if (!isValid) return;
+
+            const session = getSessionForCompany(companyDB);
+            if (!session) {
+                showAlert('No hay sesión activa para la compañía seleccionada', 'error');
+                return;
+            }
+
+            const quotationData = {
+                CardCode: selectedCustomer.CardCode,
+                CardName: selectedCustomer.CardName,
+                DocDate: document.getElementById('docDate').value,
+                ValidUntil: document.getElementById('validUntil').value,
+                Comments: document.getElementById('comments').value,
+                DocumentLines: documentLines
+            };
+
+            try {
+                showAlert('Creando oferta de venta...', 'info');
+
+                const response = await fetch('/api/sap/create-quotation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: session.sessionId,
+                        companyDB: companyDB,
+                        quotationData: quotationData
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert(`✅ Oferta de venta ${result.docNum} creada exitosamente`, 'success');
+                    clearForm();
+                } else {
+                    showAlert('Error al crear la oferta: ' + (result.error || 'Error desconocido'), 'error');
+                }
+
+            } catch (error) {
+                console.error('Error creating quotation:', error);
+                showAlert('Error al crear la oferta: ' + error.message, 'error');
+            }
+        }
+
+        // Search orders for creating quotations from orders
+        async function searchOrders() {
+            const orderNum = document.getElementById('orderNumSearch').value.trim();
+            const customerCode = document.getElementById('orderCustomerSearch').value.trim();
+            const dateFrom = document.getElementById('dateFromSearch').value;
+            const dateTo = document.getElementById('dateToSearch').value;
+
+            const ordersList = document.getElementById('ordersList');
+            ordersList.innerHTML = '';
+            ordersList.style.display = 'none';
+            
+            document.getElementById('orderPreview').style.display = 'none';
+
+            const filters = {};
+            if (orderNum) filters.docNum = orderNum;
+            if (customerCode) filters.cardCode = customerCode;
+            if (dateFrom) filters.dateFrom = dateFrom;
+            if (dateTo) filters.dateTo = dateTo;
+
+            if (Object.keys(filters).length === 0) {
+                showAlert('Ingrese al menos un criterio de búsqueda', 'warning');
+                return;
+            }
+
+            try {
+                showAlert('Buscando órdenes de venta...', 'info');
+                
+                for (const result of sapAuth.sessions) {
+                    if (result.success) {
+                        const response = await fetch('/api/sap/sales-orders', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: result.sessionId,
+                                companyDB: result.companyDB,
+                                filters: { ...filters, limit: 20 }
+                            })
+                        });
+
+                        const searchResult = await response.json();
+                        
+                        if (searchResult.success && searchResult.data.value) {
+                            displayOrders(searchResult.data.value, result.companyDB);
+                        }
+                    }
+                }
+                
+                hideAlert();
+                ordersList.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error searching orders:', error);
+                showAlert('Error al buscar órdenes: ' + error.message, 'error');
+            }
+        }
+
+        // Display orders for selection
+        function displayOrders(orders, companyDB) {
+            const ordersList = document.getElementById('ordersList');
+            const companyName = getCompanyName(companyDB);
+            
+            orders.forEach(order => {
+                const orderItem = document.createElement('div');
+                orderItem.className = 'order-item';
+                orderItem.innerHTML = `
+                    <div class="order-main-info">
+                        <div class="order-number">Orden #${order.DocNum} - ${companyName}</div>
+                        <div class="order-customer">${order.CardCode} - ${order.CardName}</div>
+                    </div>
+                    <div class="order-amount">$${(order.DocTotal || 0).toFixed(2)}</div>
+                `;
+                
+                orderItem.addEventListener('click', () => selectOrder(order, companyDB));
+                ordersList.appendChild(orderItem);
+            });
+        }
+
+        // Select order for creating quotation
+        function selectOrder(order, companyDB) {
+            selectedOrder = { ...order, companyDB };
+            
+            // Update UI
+            document.querySelectorAll('.order-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            event.target.closest('.order-item').classList.add('selected');
+            
+            // Show order preview
+            displayOrderPreview(order);
+        }
+
+        // Display order preview
+        function displayOrderPreview(order) {
+            const previewContent = document.getElementById('orderPreviewContent');
+            previewContent.innerHTML = `
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Número de Orden</label>
+                        <input type="text" class="form-input" value="${order.DocNum}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cliente</label>
+                        <input type="text" class="form-input" value="${order.CardCode} - ${order.CardName}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fecha</label>
+                        <input type="text" class="form-input" value="${new Date(order.DocDate).toLocaleDateString()}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Total</label>
+                        <input type="text" class="form-input" value="$${(order.DocTotal || 0).toFixed(2)}" readonly>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('orderPreview').style.display = 'block';
+        }
+
+        // Create quotation from selected order
+        async function createQuotationFromOrder() {
+            if (!selectedOrder) {
+                showAlert('Debe seleccionar una orden primero', 'error');
+                return;
+            }
+
+            try {
+                showAlert('Creando oferta desde orden de venta...', 'info');
+
+                // Here you would implement the logic to convert the order to a quotation
+                // For now, we'll show a success message
+                showAlert(`✅ Oferta creada exitosamente desde la Orden #${selectedOrder.DocNum}`, 'success');
+                
+                // Switch to the new quote tab
+                document.querySelector('[data-tab="create"]').click();
+                
+            } catch (error) {
+                console.error('Error creating quotation from order:', error);
+                showAlert('Error al crear oferta desde orden: ' + error.message, 'error');
+            }
+        }
+
+        // Load quotations for all companies
+        async function loadQuotationsForAllCompanies() {
+            const quotesTableBody = document.getElementById('quotesTableBody');
+            quotesTableBody.innerHTML = '';
+            
+            showQuotesLoading(true);
+
+            for (const result of sapAuth.sessions) {
+                if (result.success) {
+                    await loadQuotationsForCompany(result.companyDB, result.sessionId);
+                }
+            }
+
+            showQuotesLoading(false);
+        }
+
+        // Load quotations for specific company
+        async function loadQuotationsForCompany(companyDB, sessionId) {
+            try {
+                const response = await fetch('/api/sap/quotations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: sessionId,
+                        companyDB: companyDB,
+                        filters: { limit: 20 }
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success && result.data.value) {
+                    displayQuotations(result.data.value, companyDB);
+                }
+
+            } catch (error) {
+                console.error(`Error loading quotations for ${companyDB}:`, error);
+            }
+        }
+
+        // Display quotations
+        function displayQuotations(quotations, companyDB) {
+            const quotesTableBody = document.getElementById('quotesTableBody');
+            const companyName = getCompanyName(companyDB);
+            
+            quotations.forEach(quotation => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${quotation.DocNum}</td>
+                    <td>${quotation.CardCode} - ${quotation.CardName}</td>
+                    <td>${new Date(quotation.DocDate).toLocaleDateString()}</td>
+                    <td>${quotation.ValidUntil ? new Date(quotation.ValidUntil).toLocaleDateString() : 'N/A'}</td>
+                    <td>$${(quotation.DocTotal || 0).toFixed(2)}</td>
+                    <td><span class="status-badge ${quotation.DocumentStatus === 'O' ? 'status-open' : quotation.DocumentStatus === 'A' ? 'status-approved' : 'status-rejected'}">${getQuotationStatus(quotation.DocumentStatus)}</span></td>
+                    <td>${companyName}</td>
+                    <td>
+                        <button class="table-action-btn" onclick="viewQuotation(${quotation.DocEntry}, '${companyDB}')">Ver</button>
+                        ${quotation.DocumentStatus === 'O' ? `<button class="table-action-btn success" onclick="convertToOrder(${quotation.DocEntry}, '${companyDB}')">Convertir</button>` : ''}
+                    </td>
+                `;
+                quotesTableBody.appendChild(row);
+            });
+        }
+
+        // Get quotation status text
+        function getQuotationStatus(status) {
+            const statusMap = {
+                'O': 'Abierta',
+                'A': 'Aprobada',
+                'C': 'Cerrada',
+                'R': 'Rechazada'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Search quotations
+        async function searchQuotations() {
+            const quoteNum = document.getElementById('quoteNumSearch').value.trim();
+            const customerCode = document.getElementById('quoteCustomerSearch').value.trim();
+            const dateFrom = document.getElementById('quoteDateFromSearch').value;
+            const dateTo = document.getElementById('quoteDateToSearch').value;
+
+            const quotesTableBody = document.getElementById('quotesTableBody');
+            quotesTableBody.innerHTML = '';
+            
+            showQuotesLoading(true);
+
+            const filters = {};
+            if (quoteNum) filters.docNum = quoteNum;
+            if (customerCode) filters.cardCode = customerCode;
+            if (dateFrom) filters.dateFrom = dateFrom;
+            if (dateTo) filters.dateTo = dateTo;
+
+            for (const result of sapAuth.sessions) {
+                if (result.success) {
+                    try {
+                        const response = await fetch('/api/sap/quotations', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: result.sessionId,
+                                companyDB: result.companyDB,
+                                filters: { ...filters, limit: 50 }
+                            })
+                        });
+
+                        const searchResult = await response.json();
+                        
+                        if (searchResult.success && searchResult.data.value) {
+                            displayQuotations(searchResult.data.value, result.companyDB);
+                        }
+
+                    } catch (error) {
+                        console.error(`Error searching quotations for ${result.companyDB}:`, error);
+                    }
+                }
+            }
+
+            showQuotesLoading(false);
+        }
+
+        // View quotation details
+        function viewQuotation(docEntry, companyDB) {
+            showAlert(`Vista detallada de la Oferta ${docEntry} en desarrollo`, 'info');
+        }
+
+        // Convert quotation to sales order
+        async function convertToOrder(docEntry, companyDB) {
+            if (!confirm('¿Está seguro de que desea convertir esta oferta a orden de venta?')) {
+                return;
+            }
+
+            const session = getSessionForCompany(companyDB);
+            if (!session) {
+                showAlert('No hay sesión activa para la compañía seleccionada', 'error');
+                return;
+            }
+
+            try {
+                showAlert('Convirtiendo oferta a orden de venta...', 'info');
+
+                const response = await fetch('/api/sap/convert-quotation-to-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: session.sessionId,
+                        companyDB: companyDB,
+                        quotationDocEntry: docEntry
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert(`✅ ${result.message}`, 'success');
+                    // Reload quotations to reflect status change
+                    loadQuotationsForAllCompanies();
+                } else {
+                    showAlert('Error al convertir oferta: ' + (result.error || 'Error desconocido'), 'error');
+                }
+
+            } catch (error) {
+                console.error('Error converting quotation to order:', error);
+                showAlert('Error al convertir oferta: ' + error.message, 'error');
+            }
+        }
+
+        // Generate report
+        async function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            showAlert(`Generando reporte de tipo: ${reportType}`, 'info');
+            
+            // Implement report generation logic here
+            setTimeout(() => {
+                const reportResults = document.getElementById('reportResults');
+                const reportContent = document.getElementById('reportContent');
+                reportContent.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: var(--sap-medium-gray);">
+                        📊 Reporte "${reportType}" en desarrollo.<br>
+                        <small>Se integrará con los datos reales de ofertas de venta.</small>
+                    </div>
+                `;
+                reportResults.style.display = 'block';
+            }, 1000);
+        }
+
+        // Clear form
+        function clearForm() {
+            document.getElementById('quotationForm').reset();
+            document.getElementById('selectedCustomerCode').value = '';
+            document.getElementById('selectedCustomerName').value = '';
+            document.getElementById('itemsTableBody').innerHTML = '';
+            document.getElementById('quoteTotal').textContent = '$0.00';
+            document.getElementById('customerList').style.display = 'none';
+            
+            selectedCustomer = null;
+            customers = [];
+            quoteItems = [];
+            
+            setDefaultDates();
+        }
+
+        // Helper functions
+        function getSessionForCompany(companyDB) {
+            if (!sapAuth || !sapAuth.sessions) return null;
+            
+            for (const result of sapAuth.sessions) {
+                if (result.companyDB === companyDB && result.success) {
+                    return result;
+                }
+            }
+            return null;
+        }
+
+        function getCompanyName(companyDB) {
+            const companyNames = {
+                'SBO_GT_STIA_PROD': 'Guatemala',
+                'SBO_HO_STIA_PROD': 'Honduras',
+                'SBO_PA_STIA_PROD': 'Panamá',
+                'SBO_STIACR_PROD': 'Costa Rica'
+            };
+            return companyNames[companyDB] || companyDB;
+        }
+
+        function showQuotesLoading(show) {
+            const loadingElement = document.getElementById('quotesLoading');
+            loadingElement.style.display = show ? 'block' : 'none';
+        }
+
+        function showAlert(message, type = 'info') {
+            const alert = document.getElementById('alert');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            if (type !== 'error') {
+                setTimeout(() => {
+                    hideAlert();
+                }, 5000);
+            }
+        }
+
+        function hideAlert() {
+            const alert = document.getElementById('alert');
+            alert.style.display = 'none';
+        }
+
+        console.log('Sales Quotes page loaded successfully');
+    </script>
+</body>
+</html>

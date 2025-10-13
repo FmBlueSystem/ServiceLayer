@@ -1,0 +1,197 @@
+# Production override for Docker Compose
+# Optimized for performance, security, and reliability
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      target: production
+      args:
+        NODE_VERSION: ${NODE_VERSION:-18}
+    container_name: my-app-prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-warn}
+      MAX_REQUEST_SIZE: ${MAX_REQUEST_SIZE:-10mb}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+    networks:
+      - app-network
+    volumes:
+      - app_logs:/app/logs:rw
+    deploy:
+      resources:
+        limits:
+          memory: ${APP_MEMORY_LIMIT:-512M}
+          cpus: ${APP_CPU_LIMIT:-1.0}
+        reservations:
+          memory: ${APP_MEMORY_RESERVATION:-256M}
+          cpus: ${APP_CPU_RESERVATION:-0.5}
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Nginx reverse proxy for production
+  nginx:
+    image: nginx:1.24-alpine
+    container_name: my-app-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - app-network
+    depends_on:
+      - app
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: 0.5
+
+  postgres:
+    container_name: my-app-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - postgres_logs:/var/log/postgresql
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          memory: ${POSTGRES_MEMORY_LIMIT:-1G}
+          cpus: ${POSTGRES_CPU_LIMIT:-1.0}
+        reservations:
+          memory: ${POSTGRES_MEMORY_RESERVATION:-512M}
+          cpus: ${POSTGRES_CPU_RESERVATION:-0.5}
+    command: >
+      postgres
+      -c max_connections=${POSTGRES_MAX_CONNECTIONS:-100}
+      -c shared_buffers=${POSTGRES_SHARED_BUFFERS:-256MB}
+      -c effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-1GB}
+      -c maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c log_destination=stderr
+      -c logging_collector=on
+      -c log_directory=/var/log/postgresql
+
+  redis:
+    container_name: my-app-redis-prod
+    restart: unless-stopped
+    volumes:
+      - redis_data_prod:/data
+      - ./docker/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - app-network
+    command: redis-server /usr/local/etc/redis/redis.conf
+    deploy:
+      resources:
+        limits:
+          memory: ${REDIS_MEMORY_LIMIT:-512M}
+          cpus: ${REDIS_CPU_LIMIT:-0.5}
+        reservations:
+          memory: ${REDIS_MEMORY_RESERVATION:-256M}
+          cpus: ${REDIS_CPU_RESERVATION:-0.25}
+
+  # Log aggregation service
+  fluentd:
+    image: fluent/fluentd:v1.16-debian-1
+    container_name: my-app-fluentd
+    restart: unless-stopped
+    volumes:
+      - ./docker/fluentd.conf:/fluentd/etc/fluent.conf:ro
+      - app_logs:/app/logs:ro
+      - nginx_logs:/nginx/logs:ro
+      - postgres_logs:/postgres/logs:ro
+      - fluentd_logs:/fluentd/log
+    networks:
+      - app-network
+    environment:
+      FLUENTD_CONF: fluent.conf
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: 0.5
+
+  # Health monitoring service
+  healthcheck-service:
+    image: curlimages/curl:latest
+    container_name: my-app-healthcheck
+    restart: unless-stopped
+    networks:
+      - app-network
+    environment:
+      CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL:-60}
+      WEBHOOK_URL: ${HEALTH_WEBHOOK_URL:-}
+    volumes:
+      - ./scripts/health-monitor.sh:/health-monitor.sh:ro
+    command: /bin/sh /health-monitor.sh
+    depends_on:
+      - app
+      - nginx
+
+volumes:
+  postgres_data_prod:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${POSTGRES_DATA_PATH:-./data/postgres}
+  redis_data_prod:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${REDIS_DATA_PATH:-./data/redis}
+  app_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  postgres_logs:
+    driver: local
+  fluentd_logs:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${NETWORK_SUBNET:-172.21.0.0/16}

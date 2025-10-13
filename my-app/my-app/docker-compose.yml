@@ -1,0 +1,105 @@
+# Base Docker Compose configuration
+# Works across platforms (macOS ARM64, Windows x86_64, Linux)
+
+version: '3.8'
+
+services:
+  # Main application service
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: production
+      platforms:
+        - linux/amd64
+        - linux/arm64
+      args:
+        NODE_VERSION: ${NODE_VERSION:-18}
+        PLATFORM_SPECIFIC_CONFIG: ${PLATFORM_CONFIG:-}
+    container_name: my-app-main
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${APP_PORT:-3000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-myapp}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      HEALTH_CHECK_INTERVAL: ${HEALTH_CHECK_INTERVAL:-30000}
+      GRACEFUL_SHUTDOWN_TIMEOUT: ${GRACEFUL_SHUTDOWN_TIMEOUT:-10000}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_logs:/app/logs
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL database service
+  postgres:
+    image: postgres:15-alpine
+    container_name: my-app-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-myapp}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:---auth-host=scram-sha-256}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-myapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis cache service
+  redis:
+    image: redis:7-alpine
+    container_name: my-app-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory ${REDIS_MAX_MEMORY:-256mb} --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+# Named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  app_logs:
+    driver: local
+
+# Custom network for service communication
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${NETWORK_SUBNET:-172.20.0.0/16}
