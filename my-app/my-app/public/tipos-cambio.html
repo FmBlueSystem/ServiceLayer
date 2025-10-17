@@ -355,12 +355,6 @@
                 <div class="header-subtitle">Sistema de Consulta Multi-Compañía <span id="systemName">Loading...</span></div>
             </div>
             <div class="header-actions">
-                <button onclick="refreshAllRates()" class="btn btn-secondary" id="refreshBtn">
-                    🔄 Actualizar Todo
-                </button>
-                <button onclick="updateRatesInSAP()" class="btn btn-success" id="updateSAPBtn" style="display: none;">
-                    💾 Actualizar en SAP
-                </button>
                 <a href="/dashboard" class="btn btn-secondary">← Volver al Dashboard</a>
             </div>
         </div>
@@ -377,11 +371,11 @@
                 <div class="form-group">
                     <label>País</label>
                     <select id="countrySelect">
-                        <option value="ALL">Todos los Países</option>
-                        <option value="COSTA_RICA">Costa Rica</option>
-                        <option value="HONDURAS">Honduras</option>
-                        <option value="GUATEMALA">Guatemala</option>
-                        <option value="PANAMA">Panamá</option>
+                        <option value="ALL">🌎 Todos los Países</option>
+                        <option value="COSTA_RICA">🇨🇷 Costa Rica</option>
+                        <option value="HONDURAS">🇭🇳 Honduras</option>
+                        <option value="GUATEMALA">🇬🇹 Guatemala</option>
+                        <option value="PANAMA">🇵🇦 Panamá</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -475,8 +469,8 @@
         // Populate company database dropdown
         function populateCompanyDBDropdown() {
             const select = document.getElementById('companyDBSelect');
-            select.innerHTML = '<option value="">Todas las Bases de Datos</option>';
-            
+            select.innerHTML = '<option value="">🌎 Todas las Bases de Datos</option>';
+
             if (sapAuth && sapAuth.sessions) {
                 Object.keys(sapAuth.sessions).forEach(companyDB => {
                     const session = sapAuth.sessions[companyDB];
@@ -493,10 +487,10 @@
         // Get display name for company
         function getCompanyDisplayName(companyDB) {
             const names = {
-                'SBO_GT_STIA_PROD': 'Guatemala',
-                'SBO_HO_STIA_PROD': 'Honduras', 
-                'SBO_PA_STIA_PROD': 'Panamá',
-                'SBO_STIACR_PROD': 'Costa Rica'
+                'SBO_GT_STIA_PROD': '🇬🇹 Guatemala',
+                'SBO_HO_STIA_PROD': '🇭🇳 Honduras',
+                'SBO_PA_STIA_PROD': '🇵🇦 Panamá',
+                'SBO_STIACR_PROD': '🇨🇷 Costa Rica'
             };
             return names[companyDB] || companyDB;
         }
@@ -598,7 +592,7 @@
             if (result.success) {
                 currentExchangeRates[country] = result;
                 displayCountryRates(country, result);
-                showUpdateSAPButton();
+                // showUpdateSAPButton(); // Disabled - button removed
             } else {
                 throw new Error(result.error || 'Error desconocido');
             }
@@ -640,8 +634,8 @@
                         displayCountryError(country, result.errors[country]);
                     });
                 }
-                
-                showUpdateSAPButton();
+
+                // showUpdateSAPButton(); // Disabled - button removed
                 showAlert(`Tipos de cambio cargados: ${result.successCount} países exitosos, ${result.errorCount} errores`, 'success');
             } else {
                 throw new Error(result.error || 'Error desconocido');
@@ -668,17 +662,41 @@
         // Display country rates
         function displayCountryRates(country, data) {
             const container = document.getElementById('exchangeRatesContainer');
-            
+
             const countryCard = document.createElement('div');
             countryCard.className = 'country-card';
+
+            // Determinar el estado
+            let statusBadge = '<div class="country-status status-success">✓ Activo</div>';
+            let cacheWarning = '';
+
+            if (data.cached && data.stale) {
+                statusBadge = '<div class="country-status status-warning">⚠️ Datos en Caché</div>';
+                cacheWarning = `
+                    <div class="alert warning" style="display: block; margin-top: 10px; font-size: 12px;">
+                        ⚠️ Datos del caché (${data.cacheAge || 'desconocido'}).
+                        El servicio BCCR tiene límite de tasa. Los datos se actualizarán automáticamente cuando sea posible.
+                    </div>
+                `;
+            } else if (data.rateLimitExceeded) {
+                statusBadge = '<div class="country-status status-error">⚠️ Límite Alcanzado</div>';
+                cacheWarning = `
+                    <div class="alert error" style="display: block; margin-top: 10px; font-size: 12px;">
+                        ⚠️ Límite de solicitudes del BCCR alcanzado. Por favor espere 15 minutos antes de intentar nuevamente.
+                    </div>
+                `;
+            }
+
             countryCard.innerHTML = `
                 <div class="country-header">
                     <div class="country-name">${getCountryDisplayName(country)}</div>
-                    <div class="country-status status-success">✓ Activo</div>
+                    ${statusBadge}
                 </div>
-                
+
+                ${cacheWarning}
+
                 <div class="exchange-rates-list">
-                    ${data.data.map(rate => `
+                    ${data.data ? data.data.map(rate => `
                         <div class="exchange-rate-item">
                             <div class="currency-info">
                                 <div class="currency-code">${rate.currency}</div>
@@ -686,26 +704,27 @@
                             </div>
                             <div class="exchange-rate-value">${formatRate(rate.rate)}</div>
                         </div>
-                    `).join('')}
+                    `).join('') : '<p>No hay datos disponibles</p>'}
                 </div>
-                
+
                 <div class="country-source">
                     Fuente: ${getSourceDisplayName(data.source)}
+                    ${data.cached ? ' (Caché)' : ''}
                 </div>
-                
+
                 ${data.lastUpdate ? `
                     <div class="update-indicator">
                         Última actualización: ${formatDateTime(data.lastUpdate)}
                     </div>
                 ` : ''}
-                
+
                 <div class="btn-group">
                     <button onclick="refreshCountryRates('${country}')" class="btn btn-secondary btn-small">
                         🔄 Actualizar
                     </button>
                 </div>
             `;
-            
+
             container.appendChild(countryCard);
         }
 
@@ -768,21 +787,60 @@
 
         // Format date
         function formatDate(dateString) {
+            if (!dateString) {
+                console.warn('formatDate: dateString is empty or null');
+                return 'N/A';
+            }
+
             try {
+                console.log('formatDate: Attempting to format:', dateString, 'Type:', typeof dateString);
                 const date = new Date(dateString);
-                return date.toLocaleDateString('es-CR');
-            } catch {
-                return dateString;
+
+                // Verificar si la fecha es válida
+                if (isNaN(date.getTime())) {
+                    console.error('formatDate: Invalid date:', dateString);
+                    return 'N/A';
+                }
+
+                const formatted = date.toLocaleDateString('es-CR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+                console.log('formatDate: Successfully formatted to:', formatted);
+                return formatted;
+            } catch (error) {
+                console.error('formatDate: Error formatting date:', dateString, error);
+                return 'N/A';
             }
         }
 
         // Format date and time
         function formatDateTime(dateString) {
+            if (!dateString) {
+                return 'N/A';
+            }
+
             try {
                 const date = new Date(dateString);
-                return date.toLocaleString('es-CR');
-            } catch {
-                return dateString;
+
+                // Verificar si la fecha es válida
+                if (isNaN(date.getTime())) {
+                    return 'N/A';
+                }
+
+                return date.toLocaleString('es-CR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            } catch (error) {
+                console.error('Error formatting datetime:', dateString, error);
+                return 'N/A';
             }
         }
 
@@ -799,14 +857,14 @@
             await fetchExchangeRates();
         }
 
-        // Show update SAP button
-        function showUpdateSAPButton() {
-            const btn = document.getElementById('updateSAPBtn');
-            btn.style.display = 'inline-flex';
-        }
+        // Show update SAP button (Disabled - button removed)
+        // function showUpdateSAPButton() {
+        //     const btn = document.getElementById('updateSAPBtn');
+        //     btn.style.display = 'inline-flex';
+        // }
 
-        // Update rates in SAP
-        async function updateRatesInSAP() {
+        // Update rates in SAP (Disabled - button removed)
+        /* async function updateRatesInSAP() {
             if (Object.keys(currentExchangeRates).length === 0) {
                 showAlert('No hay tipos de cambio para actualizar', 'warning');
                 return;
@@ -871,7 +929,7 @@
                 updateBtn.disabled = false;
                 updateBtn.textContent = '💾 Actualizar en SAP';
             }
-        }
+        } */
 
         // Update last update info
         function updateLastUpdateInfo() {
@@ -888,11 +946,9 @@
         <div class="footer-content">
             <div class="footer-left">
                 <span class="bluesystem-brand">BlueSystemIO</span>
-                <span>Sistema desarrollado por BlueSystemIO</span>
+                <span>2025</span>
             </div>
             <div class="footer-right">
-                <span>📞 Soporte</span>
-                <span>📄 Docs</span>
                 <span>Version 1.0.0</span>
             </div>
         </div>

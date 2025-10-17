@@ -2,26 +2,273 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 const logger = require('../config/logger');
+const redis = require('../config/redis');
 
 class SAPService {
   constructor() {
+    // Configuración inicial (se carga desde DB en el primer uso)
     this.sapEndpoint = process.env.SAP_ENDPOINT || 'https://sap-stiacmzdr-sl.skyinone.net:50000/';
     this.timeout = parseInt(process.env.SAP_TIMEOUT) || 10000;
     this.retries = parseInt(process.env.SAP_RETRIES) || 3;
-    
+    this.verifySsl = process.env.SAP_VERIFY_SSL !== 'false';
+
+    // Flag para saber si ya se cargó la configuración desde DB
+    this.configLoaded = false;
+
     // Create custom agent to handle self-signed certificates
     this.httpsAgent = new https.Agent({
-      rejectUnauthorized: process.env.SAP_VERIFY_SSL !== 'false', // Allow disabling SSL verification
+      rejectUnauthorized: this.verifySsl,
       timeout: this.timeout
     });
+
+    // Cache para BCCR para evitar rate limiting
+    this.bccrCache = {
+      data: null,
+      timestamp: null,
+      ttl: 3600000 // 1 hora en milisegundos
+    };
+
+    // TTLs de cache en Redis por tipo de dato (en segundos)
+    this.cacheTTLs = {
+      items: 300,              // Artículos: 5 minutos
+      businessPartners: 300,   // Socios de negocio: 5 minutos
+      salesOrders: 60,         // Órdenes: 1 minuto (datos más dinámicos)
+      quotations: 60,          // Cotizaciones: 1 minuto
+      exchangeRates: 1800,     // Tipos de cambio: 30 minutos
+      fichasTecnicas: 600,     // Fichas técnicas: 10 minutos
+      journalEntries: 180,     // Asientos contables: 3 minutos
+      systemInfo: 3600,        // Info sistema: 1 hora
+      default: 300             // Por defecto: 5 minutos
+    };
+  }
+
+  /**
+   * Cargar configuración desde la base de datos
+   * @returns {Promise<void>}
+   */
+  async loadConfigFromDB() {
+    try {
+      const configService = require('./configService');
+
+      // Cargar configuraciones de SAP desde la base de datos
+      const sapEndpoint = await configService.get('sap_endpoint', this.sapEndpoint);
+      const sapTimeout = await configService.get('sap_timeout', String(this.timeout));
+      const sapRetries = await configService.get('sap_retries', String(this.retries));
+      const sapVerifySsl = await configService.get('sap_verify_ssl', this.verifySsl ? 'true' : 'false');
+
+      // Actualizar configuración
+      this.sapEndpoint = sapEndpoint;
+      this.timeout = parseInt(sapTimeout);
+      this.retries = parseInt(sapRetries);
+      this.verifySsl = sapVerifySsl !== 'false';
+
+      // Recrear el agente HTTPS con la nueva configuración
+      this.httpsAgent = new https.Agent({
+        rejectUnauthorized: this.verifySsl,
+        timeout: this.timeout
+      });
+
+      this.configLoaded = true;
+
+      logger.info('Configuración de SAP cargada desde base de datos', {
+        sapEndpoint: this.sapEndpoint,
+        timeout: this.timeout,
+        retries: this.retries,
+        verifySsl: this.verifySsl
+      });
+
+    } catch (error) {
+      logger.warn('No se pudo cargar configuración desde DB, usando valores por defecto', {
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Asegurar que la configuración esté cargada antes de cada operación
+   * @returns {Promise<void>}
+   */
+  async ensureConfigLoaded() {
+    if (!this.configLoaded) {
+      await this.loadConfigFromDB();
+    }
+  }
+
+  /**
+   * Limpiar cache de configuración (llamar cuando se actualiza la configuración)
+   */
+  clearCache() {
+    this.configLoaded = false;
+    logger.info('Cache de configuración de SAP limpiado');
+  }
+
+  /**
+   * Generar clave de cache única basada en endpoint y parámetros
+   */
+  generateCacheKey(endpoint, params = {}) {
+    const paramsString = JSON.stringify(params);
+    return `sap:${endpoint}:${Buffer.from(paramsString).toString('base64')}`;
+  }
+
+  /**
+   * Obtener datos del cache de Redis
+   */
+  async getFromCache(cacheKey) {
+    try {
+      if (!redis.connected) {
+        return null;
+      }
+
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        logger.debug('Cache HIT', { cacheKey });
+        return JSON.parse(cached);
+      }
+
+      logger.debug('Cache MISS', { cacheKey });
+      return null;
+    } catch (error) {
+      logger.warn('Error reading from cache', { error: error.message, cacheKey });
+      return null;
+    }
+  }
+
+  /**
+   * Guardar datos en cache de Redis con TTL
+   */
+  async saveToCache(cacheKey, data, ttl) {
+    try {
+      if (!redis.connected) {
+        return false;
+      }
+
+      await redis.set(cacheKey, JSON.stringify(data), { ttl });
+      logger.debug('Cache SAVED', { cacheKey, ttl });
+      return true;
+    } catch (error) {
+      logger.warn('Error saving to cache', { error: error.message, cacheKey });
+      return false;
+    }
+  }
+
+  /**
+   * Invalidar cache específico o por patrón
+   */
+  async invalidateCache(pattern = 'sap:*') {
+    try {
+      if (!redis.connected) {
+        return false;
+      }
+
+      // Redis no tiene método scan en el cliente actual, usar del
+      // Por ahora solo log, en producción implementar scan + del
+      logger.info('Cache invalidation requested', { pattern });
+      return true;
+    } catch (error) {
+      logger.warn('Error invalidating cache', { error: error.message, pattern });
+      return false;
+    }
+  }
+
+  /**
+   * Wrapper para callSAPAPI con cache automático
+   */
+  async callSAPAPIWithCache(endpoint, method = 'GET', data = null, headers = {}, cacheType = 'default', skipCache = false) {
+    // Solo cachear requests GET
+    if (method !== 'GET' || skipCache) {
+      return this.callSAPAPI(endpoint, method, data, headers);
+    }
+
+    // Generar clave de cache
+    const cacheKey = this.generateCacheKey(endpoint, { headers, data });
+
+    // Intentar obtener del cache
+    const cached = await this.getFromCache(cacheKey);
+    if (cached) {
+      return {
+        ...cached,
+        fromCache: true,
+        cacheHit: true
+      };
+    }
+
+    // Si no está en cache, hacer request real
+    const result = await this.callSAPAPI(endpoint, method, data, headers);
+
+    // Guardar en cache si fue exitoso
+    if (result.success) {
+      const ttl = this.cacheTTLs[cacheType] || this.cacheTTLs.default;
+      await this.saveToCache(cacheKey, result, ttl);
+    }
+
+    return {
+      ...result,
+      fromCache: false,
+      cacheHit: false
+    };
+  }
+
+  /**
+   * Construir parámetros OData optimizados para queries
+   * @param {Object} options - Opciones de query
+   * @param {Array} options.select - Campos a seleccionar
+   * @param {Object} options.filter - Filtros a aplicar
+   * @param {Number} options.top - Límite de registros (default: 100)
+   * @param {Number} options.skip - Registros a saltar para paginación
+   * @param {String} options.orderby - Campo(s) para ordenar
+   * @returns {String} Query string OData
+   */
+  buildODataParams(options = {}) {
+    const params = [];
+
+    // $select - solo campos necesarios (reduce tamaño de respuesta significativamente)
+    if (options.select && Array.isArray(options.select) && options.select.length > 0) {
+      params.push(`$select=${options.select.join(',')}`);
+    }
+
+    // $filter - filtros de búsqueda
+    if (options.filter && typeof options.filter === 'object') {
+      const filterStr = Object.entries(options.filter)
+        .map(([key, value]) => {
+          if (typeof value === 'string') {
+            return `${key} eq '${value}'`;
+          }
+          return `${key} eq ${value}`;
+        })
+        .join(' and ');
+      if (filterStr) {
+        params.push(`$filter=${encodeURIComponent(filterStr)}`);
+      }
+    }
+
+    // $top - limitar resultados (default 100 para evitar traer miles de registros)
+    const top = options.top !== undefined ? options.top : 100;
+    if (top > 0) {
+      params.push(`$top=${top}`);
+    }
+
+    // $skip - paginación
+    if (options.skip && options.skip > 0) {
+      params.push(`$skip=${options.skip}`);
+    }
+
+    // $orderby - ordenamiento
+    if (options.orderby) {
+      params.push(`$orderby=${options.orderby}`);
+    }
+
+    return params.length > 0 ? `?${params.join('&')}` : '';
   }
 
   async testConnection() {
+    // Asegurar que la configuración esté cargada
+    await this.ensureConfigLoaded();
+
     const startTime = Date.now();
-    
-    logger.info('Testing SAP connection', { 
+
+    logger.info('Testing SAP connection', {
       endpoint: this.sapEndpoint,
-      timeout: this.timeout 
+      timeout: this.timeout
     });
 
     try {
@@ -60,6 +307,9 @@ class SAPService {
   }
 
   async makeRequest(method, path, headers = {}, data = null, attempt = 1) {
+    // Asegurar que la configuración esté cargada antes de hacer la petición
+    await this.ensureConfigLoaded();
+
     return new Promise((resolve, reject) => {
       const url = new URL(path, this.sapEndpoint);
       const isHttps = url.protocol === 'https:';
@@ -511,13 +761,32 @@ class SAPService {
       // Construir filtros OData
       let odataFilters = [];
       if (filters.itemCode) {
-        odataFilters.push(`contains(ItemCode,'${filters.itemCode}')`);
+        // Para códigos exactos sin wildcards, usar startswith que es más confiable en SAP
+        // Si contiene wildcards, usar contains
+        if (filters.itemCode.includes('*') || filters.itemCode.includes('%')) {
+          // Remover wildcards y usar contains
+          const cleanCode = filters.itemCode.replace(/\*/g, '').replace(/%/g, '');
+          odataFilters.push(`contains(ItemCode,'${cleanCode}')`);
+        } else {
+          // Código exacto o parcial - usar startswith
+          odataFilters.push(`startswith(ItemCode,'${filters.itemCode}')`);
+        }
       }
       if (filters.itemName) {
-        odataFilters.push(`contains(ItemName,'${filters.itemName}')`);
+        if (filters.itemName.includes('*') || filters.itemName.includes('%')) {
+          const cleanName = filters.itemName.replace(/\*/g, '').replace(/%/g, '');
+          odataFilters.push(`contains(ItemName,'${cleanName}')`);
+        } else {
+          odataFilters.push(`contains(ItemName,'${filters.itemName}')`);
+        }
       }
       if (filters.numeroParte) {
-        odataFilters.push(`contains(U_Cod_Proveedor,'${filters.numeroParte}')`);
+        if (filters.numeroParte.includes('*') || filters.numeroParte.includes('%')) {
+          const cleanParte = filters.numeroParte.replace(/\*/g, '').replace(/%/g, '');
+          odataFilters.push(`contains(U_Cod_Proveedor,'${cleanParte}')`);
+        } else {
+          odataFilters.push(`startswith(U_Cod_Proveedor,'${filters.numeroParte}')`);
+        }
       }
 
       let endpoint = '/b1s/v1/Items';
@@ -1522,12 +1791,25 @@ class SAPService {
 
   async getBCCRExchangeRates() {
     try {
+      // Verificar si hay datos en caché y si aún son válidos
+      const now = Date.now();
+      if (this.bccrCache.data && this.bccrCache.timestamp) {
+        const cacheAge = now - this.bccrCache.timestamp;
+        if (cacheAge < this.bccrCache.ttl) {
+          logger.info('Returning cached BCCR exchange rates', {
+            cacheAge: `${Math.round(cacheAge / 1000)}s`,
+            ttl: `${Math.round(this.bccrCache.ttl / 1000)}s`
+          });
+          return this.bccrCache.data;
+        }
+      }
+
       logger.info('Fetching USD SELL exchange rates from BCCR external service');
-      
+
       // Format date as dd/mm/yyyy as required by BCCR API
       const today = new Date().toLocaleDateString('en-GB'); // UK format = dd/mm/yyyy
       const baseUrl = 'https://gee.bccr.fi.cr/Indicadores/Suscripciones/WS/wsindicadoreseconomicos.asmx/ObtenerIndicadoresEconomicosXML';
-      
+
       // Configuration for BCCR service
       const bccrConfig = {
         email: process.env.BCCR_EMAIL || 'freddy@bluesystem.io',
@@ -1556,7 +1838,7 @@ class SAPService {
           rates.push({
             currency: 'USD_VENTA',
             rate: parseFloat(usdVentaRate),
-            date: today,
+            date: new Date().toISOString(), // Usar formato ISO 8601 para compatibilidad con JavaScript
             lastUpdate: new Date().toISOString(),
             indicator: '318'
           });
@@ -1568,7 +1850,7 @@ class SAPService {
         rateCount: rates.length
       });
 
-      return {
+      const result = {
         success: true,
         country: 'COSTA_RICA',
         source: 'BCCR_EXTERNAL_SERVICE',
@@ -1576,14 +1858,39 @@ class SAPService {
         lastUpdate: new Date().toISOString()
       };
 
+      // Guardar en caché
+      this.bccrCache.data = result;
+      this.bccrCache.timestamp = Date.now();
+
+      logger.info('BCCR exchange rates cached', {
+        ttl: `${Math.round(this.bccrCache.ttl / 1000)}s`
+      });
+
+      return result;
+
     } catch (error) {
       logger.error('BCCR exchange rates fetch failed', { error: error.message });
-      
+
+      // Si hay un error de rate limit, retornar datos del caché si existen
+      if (error.message && error.message.includes('Rate Limit')) {
+        logger.warn('Rate limit exceeded, checking for cached data');
+        if (this.bccrCache.data) {
+          logger.info('Returning stale cached BCCR data due to rate limit');
+          return {
+            ...this.bccrCache.data,
+            cached: true,
+            stale: true,
+            cacheAge: this.bccrCache.timestamp ? `${Math.round((Date.now() - this.bccrCache.timestamp) / 1000)}s` : 'unknown'
+          };
+        }
+      }
+
       return {
         success: false,
         error: 'Failed to fetch exchange rates from BCCR service',
         details: error.message,
-        country: 'COSTA_RICA'
+        country: 'COSTA_RICA',
+        rateLimitExceeded: error.message && error.message.includes('Rate Limit')
       };
     }
   }
@@ -1990,7 +2297,7 @@ class SAPService {
           method: updateResult.method || 'unknown',
           rate: parseFloat(usdSellRate.rate),
           currency: 'USD',
-          date: today,
+          date: new Date().toISOString(), // Usar formato ISO completo para compatibilidad
           sqlExecuted: updateResult.sqlExecuted || false,
           functionImport: updateResult.functionImport || false,
           error: updateResult.error || null
@@ -2117,7 +2424,7 @@ class SAPService {
           {
             currency: 'USD',
             rate: 24.50, // Approximate rate - should be updated from real source
-            date: new Date().toLocaleDateString('es-HN'),
+            date: new Date().toISOString(), // Usar formato ISO 8601 para compatibilidad con JavaScript
             lastUpdate: new Date().toISOString(),
             note: 'Rate requires manual update'
           }
@@ -2161,7 +2468,7 @@ class SAPService {
           {
             currency: 'USD',
             rate: 7.85, // Approximate rate - should be updated from real source
-            date: new Date().toLocaleDateString('es-GT'),
+            date: new Date().toISOString(), // Usar formato ISO 8601 para compatibilidad con JavaScript
             lastUpdate: new Date().toISOString(),
             note: 'Rate requires manual update'
           }
@@ -2183,7 +2490,7 @@ class SAPService {
   async getPanamaExchangeRates(headers) {
     try {
       logger.info('Fetching Panama exchange rates');
-      
+
       // Panama uses USD as official currency, so rate is always 1.00
       return {
         success: true,
@@ -2193,7 +2500,7 @@ class SAPService {
           {
             currency: 'USD',
             rate: 1.00,
-            date: new Date().toLocaleDateString('es-PA'),
+            date: new Date().toISOString(), // Usar formato ISO 8601 para compatibilidad con JavaScript
             lastUpdate: new Date().toISOString(),
             note: 'USD is the official currency of Panama'
           }
@@ -2816,6 +3123,128 @@ class SAPService {
         error: error.message,
         companyDB: companyDB,
         timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  async getJournalEntries(sessionId, filters = {}, companyDB = null) {
+    try {
+      logger.info('Getting journal entries from SAP', {
+        sessionId: sessionId ? 'present' : 'missing',
+        companyDB: companyDB || 'current',
+        filters: Object.keys(filters)
+      });
+
+      const headers = {
+        'Cookie': `B1SESSION=${sessionId}`,
+        'Content-Type': 'application/json'
+      };
+
+      if (companyDB) {
+        headers['CompanyDB'] = companyDB;
+      }
+
+      // Build query parameters
+      const queryParams = [];
+
+      // Date filters (SAP B1 date format)
+      if (filters.startDate) {
+        queryParams.push(`ReferenceDate ge '${filters.startDate}'`);
+      }
+      if (filters.endDate) {
+        queryParams.push(`ReferenceDate le '${filters.endDate}'`);
+      }
+
+      // Transaction type filter
+      if (filters.transactionType) {
+        queryParams.push(`TransactionCode eq '${filters.transactionType}'`);
+      }
+
+      // Project code filter
+      if (filters.projectCode) {
+        queryParams.push(`ProjectCode eq '${filters.projectCode}'`);
+      }
+
+      // Reference filter
+      if (filters.reference) {
+        queryParams.push(`contains(Reference,'${filters.reference}')`);
+      }
+
+      // Memo filter
+      if (filters.memo) {
+        queryParams.push(`contains(Memo,'${filters.memo}')`);
+      }
+
+      // Build OData query
+      let endpoint = '/b1s/v1/JournalEntries';
+      const odataParams = [];
+
+      if (queryParams.length > 0) {
+        odataParams.push(`$filter=${queryParams.join(' and ')}`);
+      }
+
+      // Select specific fields to reduce payload
+      odataParams.push(`$select=JdtNum,TransId,ReferenceDate,Memo,Reference,TransactionCode,ProjectCode,JournalEntryLines`);
+
+      // Pagination
+      const top = filters.top || 100;
+      const skip = filters.skip || 0;
+      odataParams.push(`$top=${top}`);
+      odataParams.push(`$skip=${skip}`);
+
+      // Order by
+      odataParams.push(`$orderby=ReferenceDate desc,TransId desc`);
+
+      if (odataParams.length > 0) {
+        endpoint += '?' + odataParams.join('&');
+      }
+
+      logger.info('Calling SAP JournalEntries endpoint', {
+        endpoint,
+        companyDB: companyDB || 'current'
+      });
+
+      const result = await this.callSAPAPI(endpoint, 'GET', null, headers);
+
+      if (result.success) {
+        const entries = result.json?.value || [];
+
+        logger.info('Journal entries retrieved successfully', {
+          count: entries.length,
+          companyDB: companyDB || 'current'
+        });
+
+        return {
+          success: true,
+          entries: entries,
+          total: entries.length,
+          filters: filters
+        };
+      } else {
+        logger.error('Failed to retrieve journal entries', {
+          error: result.error,
+          statusCode: result.statusCode,
+          companyDB: companyDB || 'current'
+        });
+
+        return {
+          success: false,
+          error: result.error || 'Failed to retrieve journal entries',
+          statusCode: result.statusCode,
+          entries: []
+        };
+      }
+
+    } catch (error) {
+      logger.error('Journal entries query error', {
+        error: error.message,
+        companyDB: companyDB || 'current'
+      });
+
+      return {
+        success: false,
+        error: error.message,
+        entries: []
       };
     }
   }

@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const https = require('https');
+const http = require('http');
 const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
@@ -19,9 +21,10 @@ const apiRoutes = require('./routes/api');
 class Application {
   constructor() {
     this.app = express();
-    this.server = null;
+    this.httpServer = null;
+    this.httpsServer = null;
     this.shutdownInProgress = false;
-    
+
     this.setupSignalHandlers();
   }
 
@@ -246,6 +249,26 @@ class Application {
       res.sendFile(path.join(__dirname, '../public/fichas-tecnicas.html'));
     });
 
+    // Serve admin permisos page (protected route - client-side auth check)
+    this.app.get('/admin-permisos', (req, res) => {
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      res.sendFile(path.join(__dirname, '../public/admin-permisos.html'));
+    });
+
+    // Serve system config page (protected route - client-side auth check)
+    this.app.get('/config-sistema', (req, res) => {
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      res.sendFile(path.join(__dirname, '../public/config-sistema.html'));
+    });
+
     // Redirect root to login page
     this.app.get('/', (req, res) => {
       res.redirect('/login');
@@ -324,36 +347,116 @@ class Application {
   }
 
   async start() {
-    const port = process.env.PORT || 3000;
+    const httpPort = parseInt(process.env.HTTP_PORT) || 80;
+    const httpsPort = parseInt(process.env.HTTPS_PORT) || 443;
     const host = process.env.HOST || '0.0.0.0';
+    const enableHttps = process.env.ENABLE_HTTPS !== 'false';
 
-    return new Promise((resolve, reject) => {
-      this.server = this.app.listen(port, host, (error) => {
-        if (error) {
-          logger.error('❌ Failed to start server', { error: error.message });
+    // SSL Certificate paths
+    const certPath = path.join(__dirname, '../docker/ssl/cert.pem');
+    const keyPath = path.join(__dirname, '../docker/ssl/key.pem');
+
+    // Check if SSL certificates exist
+    const sslAvailable = fs.existsSync(certPath) && fs.existsSync(keyPath);
+
+    if (enableHttps && sslAvailable) {
+      // HTTPS enabled - start both HTTP (redirect) and HTTPS servers
+      const options = {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
+      };
+
+      // HTTP server - redirects to HTTPS
+      const redirectApp = express();
+      redirectApp.use((req, res) => {
+        res.redirect(301, `https://${req.hostname}:${httpsPort}${req.url}`);
+      });
+
+      await new Promise((resolve, reject) => {
+        this.httpServer = redirectApp.listen(httpPort, host, (error) => {
+          if (error) {
+            logger.error('❌ Failed to start HTTP redirect server', { error: error.message });
+            reject(error);
+          } else {
+            logger.info(`🔀 HTTP redirect server started`, { port: httpPort, host });
+            resolve();
+          }
+        });
+
+        this.httpServer.on('error', (error) => {
+          if (error.code === 'EADDRINUSE') {
+            logger.warn(`⚠️  Port ${httpPort} is already in use, skipping HTTP redirect server`);
+            resolve();
+          } else {
+            logger.error('❌ HTTP server error', { error: error.message });
+            reject(error);
+          }
+        });
+      });
+
+      // HTTPS server - main application
+      return new Promise((resolve, reject) => {
+        this.httpsServer = https.createServer(options, this.app);
+
+        this.httpsServer.listen(httpsPort, host, (error) => {
+          if (error) {
+            logger.error('❌ Failed to start HTTPS server', { error: error.message });
+            reject(error);
+          } else {
+            logger.info(`🔒 HTTPS server started successfully`, {
+              port: httpsPort,
+              host,
+              environment: process.env.NODE_ENV,
+              platform: platform.getPlatformInfo(),
+              pid: process.pid
+            });
+            resolve(this.httpsServer);
+          }
+        });
+
+        this.httpsServer.on('error', (error) => {
+          if (error.code === 'EADDRINUSE') {
+            logger.error(`❌ Port ${httpsPort} is already in use`);
+          } else {
+            logger.error('❌ HTTPS server error', { error: error.message });
+          }
           reject(error);
-        } else {
-          logger.info(`🚀 Server started successfully`, {
-            port,
-            host,
-            environment: process.env.NODE_ENV,
-            platform: platform.getPlatformInfo(),
-            pid: process.pid
-          });
-          
-          resolve(this.server);
-        }
+        });
       });
+    } else {
+      // HTTP only mode (fallback)
+      const port = process.env.PORT || 3000;
+      if (!sslAvailable) {
+        logger.warn('⚠️  SSL certificates not found, running in HTTP-only mode');
+      }
 
-      this.server.on('error', (error) => {
-        if (error.code === 'EADDRINUSE') {
-          logger.error(`❌ Port ${port} is already in use`);
-        } else {
-          logger.error('❌ Server error', { error: error.message });
-        }
-        reject(error);
+      return new Promise((resolve, reject) => {
+        this.httpServer = this.app.listen(port, host, (error) => {
+          if (error) {
+            logger.error('❌ Failed to start HTTP server', { error: error.message });
+            reject(error);
+          } else {
+            logger.info(`🚀 HTTP server started successfully`, {
+              port,
+              host,
+              environment: process.env.NODE_ENV,
+              platform: platform.getPlatformInfo(),
+              pid: process.pid
+            });
+            resolve(this.httpServer);
+          }
+        });
+
+        this.httpServer.on('error', (error) => {
+          if (error.code === 'EADDRINUSE') {
+            logger.error(`❌ Port ${port} is already in use`);
+          } else {
+            logger.error('❌ HTTP server error', { error: error.message });
+          }
+          reject(error);
+        });
       });
-    });
+    }
   }
 
   async gracefulShutdown(signal) {
@@ -373,12 +476,22 @@ class Application {
     }, timeout);
 
     try {
-      if (this.server) {
+      // Close HTTP server
+      if (this.httpServer) {
         logger.info('Closing HTTP server...');
         await new Promise((resolve) => {
-          this.server.close(resolve);
+          this.httpServer.close(resolve);
         });
         logger.info('✅ HTTP server closed');
+      }
+
+      // Close HTTPS server
+      if (this.httpsServer) {
+        logger.info('Closing HTTPS server...');
+        await new Promise((resolve) => {
+          this.httpsServer.close(resolve);
+        });
+        logger.info('✅ HTTPS server closed');
       }
 
       logger.info('Closing database connections...');

@@ -6,6 +6,11 @@
     <title>Sugiere un nombre para la app - Consulta de Artículos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="/css/app-theme.css" rel="stylesheet">
+    <!-- SheetJS para exportar a Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- jsPDF para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         /* Page-specific styles only - removing duplicates from app-theme.css */
         
@@ -29,6 +34,18 @@
 
         /* Button styles are now in app-theme.css */
 
+        /* Button group styles */
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+
+        .button-group .btn {
+            flex: 0 0 auto;
+        }
+
         /* Tabla SAP ALV Style - Mejorada */
         .sap-table-container {
             overflow-x: auto;
@@ -46,159 +63,114 @@
         }
 
         .sap-table th {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 1px solid #dee2e6;
+            background: var(--sap-gray);
+            border: 1px solid var(--sap-border);
             padding: 12px 16px;
             text-align: left;
             font-weight: 700;
             font-size: 13px;
-            color: #495057;
+            color: var(--sap-text);
             white-space: nowrap;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            position: relative;
-        }
-
-        .sap-table th::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--sap-blue) 0%, #00c9ff 100%);
         }
 
         .sap-table td {
-            border: 1px solid #e9ecef;
+            border: 1px solid var(--sap-border);
             padding: 12px 16px;
             vertical-align: middle;
             font-size: 13px;
             transition: all 0.2s ease;
         }
 
-        /* Filas alternadas */
-        .sap-table tbody tr:nth-child(even) {
-            background: #f8f9fa;
-        }
-
+        /* Filas alternadas con colores de la paleta SAP */
         .sap-table tbody tr:nth-child(odd) {
             background: var(--sap-white);
         }
 
-        /* Hover effect mejorado */
-        .sap-table tbody tr:hover {
-            background: linear-gradient(90deg, #e3f2fd 0%, #bbdefb 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 112, 224, 0.15);
+        .sap-table tbody tr:nth-child(odd) td {
+            background: var(--sap-white);
         }
 
-        /* Columnas específicas con colores */
+        .sap-table tbody tr:nth-child(even) {
+            background: var(--sap-light-blue);
+        }
+
+        .sap-table tbody tr:nth-child(even) td {
+            background: var(--sap-light-blue);
+        }
+
+        /* Hover effect simplificado usando paleta SAP */
+        .sap-table tbody tr:hover {
+            background: var(--sap-gray);
+        }
+
+        .sap-table tbody tr:hover td {
+            background: var(--sap-gray) !important;
+        }
+
+        /* Columnas específicas - Estilo simplificado */
         .sap-table th:nth-child(1), .sap-table td:nth-child(1) {
             width: 130px;
             text-align: center;
         }
-        
+
         .sap-table td:nth-child(1) {
-            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
             font-weight: 600;
-            color: #e65100 !important;
+            color: #32363A;
         }
-        
+
         .sap-table th:nth-child(2), .sap-table td:nth-child(2) {
             width: 150px;
             font-family: 'Courier New', monospace;
         }
-        
+
         .sap-table td:nth-child(2) {
-            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
             font-weight: 600;
-            color: #6a1b9a !important;
+            color: #32363A;
         }
-        
+
         .sap-table th:nth-child(3), .sap-table td:nth-child(3) {
             min-width: 250px;
         }
-        
+
         .sap-table td:nth-child(3) {
-            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
             font-weight: 500;
-            color: #2e7d32 !important;
+            color: #32363A;
         }
-        
+
         .sap-table th:nth-child(4), .sap-table td:nth-child(4) {
             width: 160px;
             font-family: 'Courier New', monospace;
         }
-        
+
         .sap-table td:nth-child(4) {
-            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-            font-weight: 600;
-            color: #e65100 !important;
+            font-weight: 500;
+            color: #32363A;
         }
-        
+
         .sap-table th:nth-child(5), .sap-table td:nth-child(5) {
             width: 120px;
             text-align: right;
         }
-        
+
         .sap-table td:nth-child(5) {
-            background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
-            font-weight: 700;
-            color: #00695c !important;
+            font-weight: 600;
+            color: #32363A;
         }
 
-        /* Banderas de países con estilos mejorados */
+        /* Banderas de países - estilo simplificado */
         .country-flag {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            color: #e65100 !important;
+            font-weight: 600;
+            color: #32363A;
         }
 
-        /* Efectos de hover para celdas específicas */
-        .sap-table tbody tr:hover td:nth-child(1) {
-            background: linear-gradient(135deg, #ff8f00 0%, #ffb74d 100%) !important;
-            color: #000 !important;
-        }
-
-        .sap-table tbody tr:hover td:nth-child(2) {
-            background: linear-gradient(135deg, #9c27b0 0%, #ba68c8 100%) !important;
-            color: #fff !important;
-        }
-
-        .sap-table tbody tr:hover td:nth-child(3) {
-            background: linear-gradient(135deg, #4caf50 0%, #81c784 100%) !important;
-            color: #000 !important;
-        }
-
-        .sap-table tbody tr:hover td:nth-child(4) {
-            background: linear-gradient(135deg, #ff9800 0%, #ffcc02 100%) !important;
-            color: #000 !important;
-        }
-
-        .sap-table tbody tr:hover td:nth-child(5) {
-            background: linear-gradient(135deg, #00acc1 0%, #4dd0e1 100%) !important;
-            color: #000 !important;
-        }
-
-        /* Animación para las filas */
+        /* Animación para las filas - simplificada */
         .sap-table tbody tr {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Borde especial para la primera y última columna */
-        .sap-table td:first-child {
-            border-left: 3px solid var(--sap-blue);
-        }
-
-        .sap-table td:last-child {
-            border-right: 3px solid var(--sap-success);
+            transition: background 0.2s ease;
         }
 
         /* Estilos específicos para celdas */
@@ -219,44 +191,33 @@
             font-style: italic;
         }
 
-        /* Indicadores de stock */
+        /* Indicadores de stock - simplificados */
         .stock-cell {
-            font-weight: 700;
+            font-weight: 600;
             text-align: center !important;
-            border-radius: 6px;
-            position: relative;
         }
 
         .stock-available {
-            background: linear-gradient(135deg, #c8e6c9 0%, #81c784 100%) !important;
-            color: #1b5e20 !important;
-            box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+            background: #e8f5e9 !important;
+            color: #2e7d32 !important;
         }
 
         .stock-zero {
-            background: linear-gradient(135deg, #ffcdd2 0%, #e57373 100%) !important;
-            color: #b71c1c !important;
-            box-shadow: 0 2px 6px rgba(244, 67, 54, 0.3);
+            background: #ffebee !important;
+            color: #c62828 !important;
         }
 
-        /* Efectos hover específicos para stock */
+        /* Efectos hover para stock - más visibles */
         .sap-table tbody tr:hover .stock-available {
-            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%) !important;
+            background: #4caf50 !important;
             color: white !important;
-            transform: scale(1.05);
+            font-weight: 700;
         }
 
         .sap-table tbody tr:hover .stock-zero {
-            background: linear-gradient(135deg, #f44336 0%, #ef5350 100%) !important;
+            background: #e57373 !important;
             color: white !important;
-            transform: scale(1.05);
-        }
-
-        /* Badges para países */
-        .country-flag {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(240, 240, 240, 0.9) 100%);
-            border: 1px solid rgba(0, 112, 224, 0.2);
-            backdrop-filter: blur(10px);
+            font-weight: 700;
         }
 
         /* Efectos de entrada simplificados */
@@ -274,53 +235,6 @@
             opacity: 1 !important;
             visibility: visible !important;
             display: table-cell !important;
-        }
-
-        /* Pulsos para indicar actividad */
-        .stock-available::before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 8px;
-            height: 8px;
-            background: #4caf50;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .stock-zero::before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 8px;
-            height: 8px;
-            background: #f44336;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
-            }
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
-            }
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
-            }
-        }
-
-        .country-flag {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 600;
         }
 
         /* Paginación */
@@ -709,9 +623,15 @@
             <div class="card-header">⚡ Acciones</div>
             <div class="card-body">
                 <div class="button-group">
-                    <button class="btn btn-secondary">📊 Exportar a Excel</button>
-                    <button class="btn btn-secondary">📄 Generar Reporte</button>
-                    <button class="btn btn-secondary" onclick="actualizarDatos()">🔄 Actualizar</button>
+                    <button class="btn btn-success" onclick="exportarAExcel()" id="btnExportar">
+                        <i class="fas fa-file-excel"></i> Exportar a Excel
+                    </button>
+                    <button class="btn btn-danger" onclick="generarReporte()">
+                        <i class="fas fa-file-pdf"></i> Generar Reporte PDF
+                    </button>
+                    <button class="btn btn-secondary" onclick="actualizarDatos()">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
                 </div>
             </div>
         </div>
@@ -722,11 +642,9 @@
         <div class="footer-content">
             <div class="footer-left">
                 <span class="bluesystem-brand">BlueSystemIO</span>
-                <span>Sistema desarrollado por BlueSystemIO</span>
+                <span>2025</span>
             </div>
             <div class="footer-right">
-                <span>📞 Soporte</span>
-                <span>📄 Docs</span>
                 <span>Version 1.0.0</span>
             </div>
         </div>
@@ -823,8 +741,17 @@
         }
 
 
+        // Variable para controlar si hay búsqueda en progreso
+        let searchInProgress = false;
+
         // Ejecutar búsqueda
         async function ejecutarBusqueda() {
+            // Evitar múltiples búsquedas simultáneas
+            if (searchInProgress) {
+                showAlert('Búsqueda en progreso, por favor espere...', 'warning');
+                return;
+            }
+
             const itemCode = document.getElementById('itemCode').value;
             const description = document.getElementById('description').value;
             const numeroParte = document.getElementById('numeroParte').value;
@@ -850,6 +777,16 @@
                 const targetDB = companyMapping[company];
                 targetSessions = validSessions.filter(s => s.companyDB === targetDB);
             }
+
+            // Marcar búsqueda en progreso y deshabilitar botones
+            searchInProgress = true;
+            const executeBtn = document.querySelector('button[onclick="ejecutarBusqueda()"]');
+            const clearBtn = document.querySelector('button[onclick="limpiarSeleccion()"]');
+            if (executeBtn) {
+                executeBtn.disabled = true;
+                executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+            }
+            if (clearBtn) clearBtn.disabled = true;
 
             // Mostrar loading
             document.getElementById('resultsContainer').innerHTML = `
@@ -939,6 +876,16 @@
                         <div>Error: ${error.message}</div>
                     </div>
                 `;
+            } finally {
+                // Rehabilitar botones al terminar (éxito o error)
+                searchInProgress = false;
+                const executeBtn = document.querySelector('button[onclick="ejecutarBusqueda()"]');
+                const clearBtn = document.querySelector('button[onclick="limpiarSeleccion()"]');
+                if (executeBtn) {
+                    executeBtn.disabled = false;
+                    executeBtn.innerHTML = '▶ Ejecutar';
+                }
+                if (clearBtn) clearBtn.disabled = false;
             }
         }
 
@@ -1184,6 +1131,226 @@
                     }, 300);
                 }
             }, 5000);
+        }
+
+        // Exportar a Excel
+        function exportarAExcel() {
+            if (currentResults.length === 0) {
+                showAlert('No hay datos para exportar. Ejecute una búsqueda primero.', 'warning');
+                return;
+            }
+
+            try {
+                // Obtener usuario actual
+                const authData = JSON.parse(localStorage.getItem('sapAuth') || '{}');
+                const usuario = authData.username || 'Usuario';
+
+                // Obtener fecha y hora actual
+                const ahora = new Date();
+                const fechaHora = ahora.toLocaleString('es-GT', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+
+                // Crear datos de encabezado
+                const headerData = [
+                    ['REPORTE DE ARTÍCULOS - SISTEMA ERP SAP'],
+                    ['Usuario:', usuario],
+                    ['Fecha y Hora de Generación:', fechaHora],
+                    [`Total de Registros:`, currentResults.length],
+                    [''], // Fila vacía para separación
+                    ['Compañía', 'Código de Artículo', 'Descripción', 'Número de Parte', 'Stock']
+                ];
+
+                // Preparar datos de artículos
+                const articulosData = currentResults.map(item => [
+                    item.country || 'N/A',
+                    item.itemCode || 'N/A',
+                    item.itemName || item.description || 'N/A',
+                    item.numeroParte || 'Sin número de parte',
+                    item.stock || 0
+                ]);
+
+                // Combinar encabezado con datos
+                const allData = [...headerData, ...articulosData];
+
+                // Crear libro de Excel
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(allData);
+
+                // Ajustar ancho de columnas
+                const colWidths = [
+                    { wch: 15 },  // Compañía
+                    { wch: 20 },  // Código de Artículo
+                    { wch: 40 },  // Descripción
+                    { wch: 20 },  // Número de Parte
+                    { wch: 12 }   // Stock
+                ];
+                ws['!cols'] = colWidths;
+
+                // Aplicar estilos al encabezado (primera fila)
+                if (ws['A1']) {
+                    ws['A1'].s = {
+                        font: { bold: true, sz: 14 },
+                        alignment: { horizontal: 'center' }
+                    };
+                }
+
+                // Merge de la primera fila (título) - ahora es la fila 1 (índice 0)
+                ws['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }, // Título: merge A1 a E1
+                ];
+
+                // Agregar hoja al libro
+                XLSX.utils.book_append_sheet(wb, ws, 'Artículos');
+
+                // Generar nombre de archivo con fecha y hora
+                const fecha = ahora.toISOString().replace(/[:.]/g, '-').split('T')[0];
+                const hora = ahora.toTimeString().split(' ')[0].replace(/:/g, '-');
+                const fileName = `Articulos_${fecha}_${hora}.xlsx`;
+
+                // Descargar archivo
+                XLSX.writeFile(wb, fileName);
+
+                showAlert(`Archivo exportado exitosamente: ${fileName}`, 'success');
+            } catch (error) {
+                console.error('Error al exportar a Excel:', error);
+                showAlert('Error al exportar a Excel: ' + error.message, 'error');
+            }
+        }
+
+        // Generar Reporte en PDF
+        function generarReporte() {
+            if (currentResults.length === 0) {
+                showAlert('No hay datos para generar reporte. Ejecute una búsqueda primero.', 'warning');
+                return;
+            }
+
+            try {
+                // Obtener usuario actual
+                const authData = JSON.parse(localStorage.getItem('sapAuth') || '{}');
+                const usuario = authData.username || 'Usuario';
+
+                // Obtener fecha y hora actual
+                const ahora = new Date();
+                const fechaHora = ahora.toLocaleString('es-GT', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+
+                // Crear instancia de jsPDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('landscape', 'mm', 'a4'); // Formato horizontal para más espacio
+
+                // Configurar fuentes
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(18);
+
+                // Título principal
+                const titulo = 'REPORTE DE ARTÍCULOS - SISTEMA ERP SAP';
+                const tituloWidth = doc.getTextWidth(titulo);
+                const pageWidth = doc.internal.pageSize.getWidth();
+                doc.text(titulo, (pageWidth - tituloWidth) / 2, 20);
+
+                // Línea decorativa
+                doc.setLineWidth(0.5);
+                doc.line(20, 25, pageWidth - 20, 25);
+
+                // Información del reporte
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(11);
+
+                let yPos = 35;
+                doc.text(`Usuario: ${usuario}`, 20, yPos);
+                doc.text(`Fecha y Hora: ${fechaHora}`, 20, yPos + 6);
+                doc.text(`Total de Registros: ${currentResults.length}`, 20, yPos + 12);
+
+                // Preparar datos para la tabla
+                const tableData = currentResults.map(item => [
+                    item.country || 'N/A',
+                    item.itemCode || 'N/A',
+                    item.itemName || item.description || 'N/A',
+                    item.numeroParte || 'Sin número de parte',
+                    (item.stock || 0).toString()
+                ]);
+
+                // Generar tabla con autoTable
+                doc.autoTable({
+                    startY: yPos + 20,
+                    head: [['Compañía', 'Código de Artículo', 'Descripción', 'Número de Parte', 'Stock']],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: {
+                        fillColor: [0, 112, 224], // Color azul SAP
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10,
+                        halign: 'center'
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 3
+                    },
+                    alternateRowStyles: {
+                        fillColor: [230, 243, 255] // Azul claro SAP
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 35, halign: 'center' },  // Compañía
+                        1: { cellWidth: 40, halign: 'left' },    // Código
+                        2: { cellWidth: 90, halign: 'left' },    // Descripción
+                        3: { cellWidth: 45, halign: 'left' },    // Número de Parte
+                        4: { cellWidth: 25, halign: 'right' }    // Stock
+                    },
+                    styles: {
+                        lineColor: [217, 217, 217], // Color borde SAP
+                        lineWidth: 0.1
+                    },
+                    margin: { left: 20, right: 20 },
+                    didDrawPage: function(data) {
+                        // Footer en cada página
+                        const pageCount = doc.internal.getNumberOfPages();
+                        const pageSize = doc.internal.pageSize;
+                        const pageHeight = pageSize.getHeight();
+
+                        doc.setFontSize(8);
+                        doc.setFont('helvetica', 'italic');
+                        doc.text(
+                            `Página ${data.pageNumber} de ${pageCount}`,
+                            pageWidth / 2,
+                            pageHeight - 10,
+                            { align: 'center' }
+                        );
+
+                        // Marca de agua - BlueSystemIO
+                        doc.setTextColor(150);
+                        doc.text('BlueSystemIO', pageWidth - 40, pageHeight - 10);
+                        doc.setTextColor(0);
+                    }
+                });
+
+                // Generar nombre de archivo con fecha y hora
+                const fecha = ahora.toISOString().replace(/[:.]/g, '-').split('T')[0];
+                const hora = ahora.toTimeString().split(' ')[0].replace(/:/g, '-');
+                const fileName = `Reporte_Articulos_${fecha}_${hora}.pdf`;
+
+                // Descargar PDF
+                doc.save(fileName);
+
+                showAlert(`Reporte PDF generado exitosamente: ${fileName}`, 'success');
+            } catch (error) {
+                console.error('Error al generar reporte PDF:', error);
+                showAlert('Error al generar reporte PDF: ' + error.message, 'error');
+            }
         }
 
         // Actualizar datos

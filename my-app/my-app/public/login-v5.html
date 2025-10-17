@@ -195,7 +195,7 @@
     <div class="login-container">
         <!-- Header -->
         <div class="login-header">
-            <div class="sap-logo">prueba v4</div>
+            <div class="sap-logo">Sistema ERP SAP</div>
             <div class="sap-subtitle">Sistema de Consulta Multi-Compañía</div>
         </div>
 
@@ -274,6 +274,7 @@
                 console.log('Attempting SAP login for user:', username);
                 console.log('Fetching /api/sap/login-all...');
 
+                // Use same protocol as page (HTTP or HTTPS)
                 const apiUrl = window.location.origin + '/api/sap/login-all';
                 console.log('Using API URL:', apiUrl);
 

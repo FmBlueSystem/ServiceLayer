@@ -100,7 +100,27 @@ function generateKey(req) {
 // Skip function for certain requests
 function skipRequest(req) {
   // Skip rate limiting for health checks
-  if (req.path === '/health' || req.path === '/ping') {
+  if (req.path === '/health' || req.path === '/ping' || req.path === '/api-info' || req.path === '/info') {
+    return true;
+  }
+
+  // Skip for static files (CSS, JS, images, etc.)
+  const staticExtensions = ['.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot', '.map'];
+  if (staticExtensions.some(ext => req.path.endsWith(ext))) {
+    return true;
+  }
+
+  // Skip for HTML pages (not API endpoints)
+  if (req.path.endsWith('.html') ||
+      req.path === '/' ||
+      req.path === '/login' ||
+      req.path === '/dashboard' ||
+      req.path === '/articulos' ||
+      req.path === '/ordenes-venta' ||
+      req.path === '/ofertas-venta' ||
+      req.path === '/reportes-eeff' ||
+      req.path === '/tipos-cambio' ||
+      req.path === '/fichas-tecnicas') {
     return true;
   }
 
@@ -148,7 +168,7 @@ function onLimitReached(req, res, next, options) {
 // Basic rate limiter configuration
 const basicLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // limit each IP to 500 requests per windowMs (aumentado de 100)
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers

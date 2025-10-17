@@ -100,14 +100,22 @@ router.get('/', (req, res) => {
 });
 
 // App Configuration endpoint
-router.get('/config', (req, res) => {
+router.get('/config', asyncHandler(async (req, res) => {
+  const configService = require('../services/configService');
+
+  // Obtener configuraciones desde la base de datos o usar valores por defecto
+  const appName = await configService.get('app_display_name', process.env.APP_DISPLAY_NAME || 'My Application');
+  const appVersion = await configService.get('app_version', process.env.APP_VERSION || '1.0.0');
+  const sapEndpoint = await configService.get('sap_endpoint', process.env.SAP_ENDPOINT || 'https://sap-stiacmzdr-sl.skyinone.net:50000/');
+
   res.json({
-    appName: process.env.APP_DISPLAY_NAME || 'My Application',
-    appVersion: process.env.APP_VERSION || '1.0.0',
+    appName,
+    appVersion,
+    sapEndpoint, // Incluir Service Layer URL
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
   });
-});
+}));
 
 // ============================================================================
 // AUTHENTICATION ROUTES
@@ -462,5 +470,12 @@ router.get('/system/metrics',
 
 router.use('/sap', sapRoutes);
 router.use('/sap-validation', sapValidationRoutes);
+
+// ============================================================================
+// ADMIN ROUTES (Permissions & Configuration)
+// ============================================================================
+
+const adminRoutes = require('./admin');
+router.use('/admin', adminRoutes);
 
 module.exports = router;

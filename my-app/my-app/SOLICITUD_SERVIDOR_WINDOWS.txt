@@ -1,0 +1,223 @@
+================================================================================
+  SOLICITUD DE SERVIDOR WINDOWS - SERVICE LAYER INTEGRATION (SAP)
+================================================================================
+
+Solicitante: BlueSystemIO
+Fecha: 2025-10-16
+Prioridad: ALTA - Aplicación crítica de negocio
+Ambiente: Producción
+
+
+1. ESPECIFICACIONES DEL SERVIDOR
+================================================================================
+
+Sistema Operativo:
+  - Windows Server 2019 o 2022 (64-bit)
+  - Licenciado y actualizado
+
+Hardware Mínimo:
+  - CPU: 4 vCPU
+  - RAM: 8 GB
+  - Disco: 100 GB SSD
+
+Hardware Recomendado (Producción):
+  - CPU: 8 vCPU
+  - RAM: 16 GB
+  - Disco: 200 GB SSD
+  - Red: 1 Gbps
+
+
+2. SOFTWARE A INSTALAR
+================================================================================
+
+Runtime:
+  ✓ Node.js 22.19.0 LTS (https://nodejs.org/)
+  ✓ npm 10.x (incluido con Node.js)
+
+Bases de Datos:
+  ✓ PostgreSQL 16.10 (puerto 5432)
+  ✓ Redis 7.x (puerto 6379)
+
+Opcional:
+  - Git for Windows
+  - pgAdmin 4 (administración PostgreSQL)
+  - RedisInsight (administración Redis)
+
+
+3. PUERTOS A ABRIR EN FIREWALL
+================================================================================
+
+INBOUND (desde red corporativa):
+  - Puerto 3000 TCP  → HTTP (redirección a HTTPS)
+  - Puerto 3443 TCP  → HTTPS (aplicación principal)
+
+LOCALHOST (solo acceso local):
+  - Puerto 5432 TCP  → PostgreSQL
+  - Puerto 6379 TCP  → Redis
+  - Puerto 9229 TCP  → Node.js debugger (solo 127.0.0.1)
+
+
+4. CONECTIVIDAD EXTERNA REQUERIDA (CRÍTICO)
+================================================================================
+
+SAP Service Layer (ESENCIAL PARA FUNCIONAMIENTO):
+  URL: https://sap-stiacmzdr-sl.skyinone.net:50000/
+  Puerto: 50000 (HTTPS)
+  Verificación SSL: Deshabilitada (certificado autofirmado SAP)
+  Bases de datos accedidas:
+    - SBO_GT_STIA_PROD (Guatemala)
+    - SBO_HO_STIA_PROD (Honduras)
+    - SBO_PA_STIA_PROD (Panamá)
+    - SBO_STIACR_PROD (Costa Rica)
+
+BCCR - Banco Central Costa Rica (Opcional):
+  URL: APIs BCCR para tipos de cambio
+  Puerto: 443 (HTTPS)
+  Frecuencia: 1-2 consultas por hora
+
+WHITELIST URLs:
+  - https://sap-stiacmzdr-sl.skyinone.net:50000/
+  - https://*.bccr.fi.cr/
+
+
+5. CONFIGURACIÓN DE RED
+================================================================================
+
+IP Estática: SÍ (requerida)
+  - IP actual en Linux: 10.13.1.83
+  - IP solicitada Windows: [A definir por infraestructura]
+  - Subnet: 10.13.x.x
+
+DNS: Configurar resolución de nombre si aplica
+
+
+6. ACCESOS Y PERMISOS
+================================================================================
+
+Usuarios:
+  - Usuario administrador para instalación inicial
+  - Usuario de servicio con permisos limitados para la aplicación
+  - Acceso RDP solo para personal autorizado de TI
+
+Carpetas:
+  - C:\Apps\my-app\ (aplicación)
+  - C:\Apps\my-app\logs\ (permisos de escritura)
+  - C:\Apps\my-app\data\ (PostgreSQL/Redis - permisos lectura/escritura)
+
+
+7. RESPALDOS
+================================================================================
+
+PostgreSQL:
+  - Frecuencia: Diaria (automática)
+  - Retención: 30 días
+  - Destino: Servidor de respaldos corporativo
+
+Archivos de configuración:
+  - Respaldo manual en cambios
+  - Ubicación: Repositorio seguro
+
+Logs:
+  - Rotación automática diaria
+  - Retención: 7 días
+
+
+8. MONITOREO REQUERIDO
+================================================================================
+
+Salud de aplicación:
+  - Endpoint: https://[IP]:3443/health
+  - Frecuencia: Cada 5 minutos
+  - Alertas: Si no responde por más de 2 minutos
+
+Recursos:
+  - CPU/RAM: Alerta si > 80% por más de 5 minutos
+  - Disco: Alerta si < 10 GB libres
+  - Logs de errores críticos
+
+
+9. SERVICIO DE WINDOWS
+================================================================================
+
+Configurar aplicación como servicio de Windows:
+  - Nombre: ServiceLayerApp
+  - Inicio: Automático
+  - Recuperación: Reinicio automático en fallos
+  - Herramienta recomendada: NSSM (https://nssm.cc/)
+
+
+10. TIEMPO ESTIMADO
+================================================================================
+
+Instalación completa: 4-6 horas
+Migración desde Linux: 2-3 horas de downtime
+Testing y validación: 2 horas
+
+
+11. CRITERIOS DE VALIDACIÓN
+================================================================================
+
+✓ Aplicación responde en puerto 3443
+✓ PostgreSQL y Redis operativos
+✓ Conexión exitosa a SAP Service Layer (4 bases de datos)
+✓ Endpoint /health retorna status OK
+✓ Página de login accesible
+✓ Tipos de cambio se cargan correctamente
+✓ Certificados SSL configurados
+✓ Logs generándose en C:\Apps\my-app\logs\
+✓ Servicio de Windows iniciando automáticamente
+
+
+12. DOCUMENTACIÓN ADJUNTA
+================================================================================
+
+Se adjuntan los siguientes archivos:
+
+1. REQUISITOS_INFRAESTRUCTURA_WINDOWS.md
+   → Documento técnico completo (13 secciones detalladas)
+
+2. Scripts de inicio para Windows:
+   - start-windows.bat (inicia aplicación manualmente)
+   - stop-windows.bat (detiene aplicación)
+   - install-service-windows.bat (instala como servicio de Windows)
+
+3. Carpeta src/ con todo el código fuente
+
+4. Archivo .env con variables de entorno (AJUSTAR IPs y passwords)
+
+
+13. CONTACTO
+================================================================================
+
+Para dudas técnicas durante la instalación:
+  - Equipo de desarrollo: BlueSystemIO
+  - Escalamiento SAP: [Definir contacto SAP Team]
+
+Para validación post-instalación:
+  - Ejecutar validaciones en sección 11
+  - Notificar a desarrollo una vez completado
+
+
+================================================================================
+NOTAS IMPORTANTES:
+================================================================================
+
+⚠️  CRÍTICO: La aplicación REQUIERE acceso al SAP Service Layer en
+   https://sap-stiacmzdr-sl.skyinone.net:50000/ para funcionar.
+   Sin esta conectividad, la aplicación NO será funcional.
+
+⚠️  Generar contraseñas seguras para:
+   - PostgreSQL (POSTGRES_PASSWORD en .env)
+   - JWT_SECRET en .env
+   - SESSION_SECRET en .env
+
+⚠️  Los certificados SSL incluidos son autofirmados (desarrollo).
+   Para producción, considerar certificados de CA confiable.
+
+⚠️  Configurar Windows Firewall para permitir tráfico en puertos 3000/3443
+   Comandos PowerShell incluidos en documento técnico completo.
+
+
+================================================================================
+FIN DE SOLICITUD
+================================================================================

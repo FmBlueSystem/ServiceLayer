@@ -170,29 +170,43 @@ router.post('/login-all', asyncHandler(async (req, res) => {
     ip: req.ip
   });
 
-  const loginResults = {};
-  let successCount = 0;
-
-  for (const companyDB of databases) {
+  // Optimización: Ejecutar logins en paralelo en lugar de secuencialmente
+  const loginPromises = databases.map(async (companyDB) => {
     try {
       const result = await sapService.loginToServiceLayer(companyDB, username, password);
-      loginResults[companyDB] = {
+      return {
+        companyDB,
         success: result.success,
         sessionId: result.success ? result.sessionId : null,
         error: result.success ? null : (result.error || 'Login failed')
       };
-      
-      if (result.success) {
-        successCount++;
-      }
     } catch (error) {
-      loginResults[companyDB] = {
+      return {
+        companyDB,
         success: false,
         sessionId: null,
         error: error.message
       };
     }
-  }
+  });
+
+  // Esperar a que todos los logins completen
+  const loginResultsArray = await Promise.all(loginPromises);
+
+  // Convertir array a objeto y contar éxitos
+  const loginResults = {};
+  let successCount = 0;
+
+  loginResultsArray.forEach(result => {
+    loginResults[result.companyDB] = {
+      success: result.success,
+      sessionId: result.sessionId,
+      error: result.error
+    };
+    if (result.success) {
+      successCount++;
+    }
+  });
 
   logger.info('SAP Service Layer multi-database login completed', {
     username,
@@ -1378,35 +1392,59 @@ router.post('/exchange-rates/multi-country', asyncHandler(async (req, res) => {
   });
 
   try {
-    const results = {};
-    const errors = {};
-    
-    // Fetch rates for each country
-    for (const country of countries) {
+    // Optimización: Ejecutar requests en paralelo
+    const countryPromises = countries.map(async (country) => {
       try {
         const countryResult = await sapService.getExchangeRates(sessionId, country, companyDB);
-        
+
         if (countryResult.success) {
-          results[country] = {
-            success: true,
-            source: countryResult.source,
-            data: countryResult.data,
-            lastUpdate: countryResult.lastUpdate
+          return {
+            country,
+            type: 'success',
+            data: {
+              success: true,
+              source: countryResult.source,
+              data: countryResult.data,
+              lastUpdate: countryResult.lastUpdate
+            }
           };
         } else {
-          errors[country] = {
-            success: false,
-            error: countryResult.error,
-            details: countryResult.details
+          return {
+            country,
+            type: 'error',
+            data: {
+              success: false,
+              error: countryResult.error,
+              details: countryResult.details
+            }
           };
         }
       } catch (countryError) {
-        errors[country] = {
-          success: false,
-          error: countryError.message
+        return {
+          country,
+          type: 'error',
+          data: {
+            success: false,
+            error: countryError.message
+          }
         };
       }
-    }
+    });
+
+    // Esperar a que todos los requests completen
+    const countryResultsArray = await Promise.all(countryPromises);
+
+    // Separar results y errors
+    const results = {};
+    const errors = {};
+
+    countryResultsArray.forEach(item => {
+      if (item.type === 'success') {
+        results[item.country] = item.data;
+      } else {
+        errors[item.country] = item.data;
+      }
+    });
 
     const successCount = Object.keys(results).length;
     const totalRateCount = Object.values(results).reduce((sum, result) => 
@@ -1955,7 +1993,7 @@ router.post('/fichas-tecnicas/create', asyncHandler(async (req, res) => {
 // Populate @FFF table in Guatemala test database
 router.post('/populate-fff', asyncHandler(async (req, res) => {
   const { sessionId, data, companyDB = 'SBO_GT_STIA_TEST' } = req.body;
-  
+
   if (!sessionId) {
     return res.status(400).json({
       success: false,
@@ -1981,7 +2019,7 @@ router.post('/populate-fff', asyncHandler(async (req, res) => {
 
   try {
     const result = await sapService.populateFFFTable(sessionId, data, companyDB);
-    
+
     if (result.success) {
       logger.info('@FFF table population completed successfully', {
         companyDB: companyDB,
@@ -2028,6 +2066,174 @@ router.post('/populate-fff', asyncHandler(async (req, res) => {
       success: false,
       error: error.message,
       companyDB: companyDB,
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
+// =================== JOURNAL ENTRIES (ASIENTOS CONTABLES) ===================
+
+// Get Journal Entries with filters
+router.post('/journal-entries', asyncHandler(async (req, res) => {
+  const { sessionId, filters = {}, companyDB } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({
+      success: false,
+      error: 'SessionId is required'
+    });
+  }
+
+  logger.info('SAP Journal Entries query requested', {
+    companyDB,
+    filters: Object.keys(filters),
+    dateRange: filters.startDate && filters.endDate ?
+      `${filters.startDate} to ${filters.endDate}` : 'all',
+    requestId: req.requestId
+  });
+
+  try {
+    const result = await sapService.getJournalEntries(sessionId, filters, companyDB);
+
+    logger.info('SAP Journal Entries query completed', {
+      companyDB,
+      entryCount: result.entries?.length || 0,
+      requestId: req.requestId
+    });
+
+    res.json({
+      success: result.success,
+      data: { value: result.entries || [] },
+      companyDB,
+      filters,
+      total: result.total || 0,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('SAP Journal Entries query error', {
+      companyDB,
+      error: error.message,
+      requestId: req.requestId
+    });
+
+    res.status(500).json({
+      success: false,
+      error: error.userMessage || 'Failed to retrieve journal entries',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
+// Get Journal Entries Report - formatted for reporting
+router.post('/journal-entries/report', asyncHandler(async (req, res) => {
+  const { sessionId, startDate, endDate, companyDB, format = 'json' } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({
+      success: false,
+      error: 'SessionId is required'
+    });
+  }
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({
+      success: false,
+      error: 'startDate and endDate are required for report generation'
+    });
+  }
+
+  logger.info('SAP Journal Entries Report requested', {
+    companyDB,
+    startDate,
+    endDate,
+    format,
+    requestId: req.requestId
+  });
+
+  try {
+    const filters = {
+      startDate,
+      endDate,
+      top: 1000  // Get more records for report
+    };
+
+    const result = await sapService.getJournalEntries(sessionId, filters, companyDB);
+
+    if (result.success) {
+      // Format data for report
+      const reportData = {
+        title: 'Reporte de Asientos Contables',
+        period: {
+          startDate: startDate,
+          endDate: endDate
+        },
+        companyDB: companyDB || 'Current',
+        generatedAt: new Date().toISOString(),
+        totalEntries: result.entries.length,
+        entries: result.entries.map(entry => ({
+          transactionId: entry.TransId,
+          journalEntryNumber: entry.JdtNum,
+          date: entry.ReferenceDate || entry.RefDate,
+          reference: entry.Reference,
+          memo: entry.Memo,
+          transactionCode: entry.TransactionCode,
+          projectCode: entry.ProjectCode,
+          lines: entry.JournalEntryLines?.map(line => ({
+            account: line.Account || line.AccountCode,
+            accountName: line.AccountName,
+            debit: line.Debit || 0,
+            credit: line.Credit || 0,
+            reference: line.Reference1,
+            memo: line.LineMemo
+          })) || []
+        })),
+        summary: {
+          totalDebit: result.entries.reduce((sum, entry) =>
+            sum + (entry.JournalEntryLines?.reduce((lineSum, line) =>
+              lineSum + (line.Debit || 0), 0) || 0), 0),
+          totalCredit: result.entries.reduce((sum, entry) =>
+            sum + (entry.JournalEntryLines?.reduce((lineSum, line) =>
+              lineSum + (line.Credit || 0), 0) || 0), 0)
+        }
+      };
+
+      logger.info('SAP Journal Entries Report generated', {
+        companyDB,
+        entryCount: reportData.totalEntries,
+        totalDebit: reportData.summary.totalDebit,
+        totalCredit: reportData.summary.totalCredit,
+        requestId: req.requestId
+      });
+
+      res.json({
+        success: true,
+        report: reportData,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      logger.error('SAP Journal Entries Report failed', {
+        companyDB,
+        error: result.error,
+        requestId: req.requestId
+      });
+
+      res.status(400).json({
+        success: false,
+        error: result.error,
+        companyDB,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    logger.error('SAP Journal Entries Report error', {
+      companyDB,
+      error: error.message,
+      requestId: req.requestId
+    });
+
+    res.status(500).json({
+      success: false,
+      error: error.userMessage || 'Failed to generate journal entries report',
       timestamp: new Date().toISOString()
     });
   }

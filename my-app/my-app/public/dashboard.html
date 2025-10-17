@@ -723,47 +723,12 @@
     </header>
 
     <!-- Menú de Navegación -->
-    <nav class="navigation-menu">
+    <nav class="navigation-menu" id="navigationMenu">
         <a href="#" class="nav-item active" data-module="dashboard">
             <span class="nav-icon">🏠</span>
             <span>Dashboard</span>
         </a>
-        <a href="#" class="nav-item" data-module="articulos" onclick="navigateToArticulos()">
-            <span class="nav-icon">📦</span>
-            <span>Consulta de Artículos</span>
-        </a>
-        <a href="#" class="nav-item" data-module="ordenes-venta" onclick="navigateToSalesOrders()">
-            <span class="nav-icon">📋</span>
-            <span>Órdenes de Venta</span>
-        </a>
-        <a href="#" class="nav-item" data-module="ofertas-venta" onclick="navigateToSalesQuotes()">
-            <span class="nav-icon">💼</span>
-            <span>Ofertas de Venta</span>
-        </a>
-        <a href="#" class="nav-item" data-module="reportes-eeff" onclick="navigateToEEFFReports()">
-            <span class="nav-icon">📈</span>
-            <span>Reportes EEFF</span>
-        </a>
-        <a href="#" class="nav-item" data-module="tipos-cambio" onclick="navigateToExchangeRates()">
-            <span class="nav-icon">💱</span>
-            <span>Tipos de Cambio</span>
-        </a>
-        <a href="#" class="nav-item" data-module="fichas-tecnicas" onclick="navigateToFichasTecnicas()">
-            <span class="nav-icon">📋</span>
-            <span>Fichas Técnicas (@FFF)</span>
-        </a>
-        <a href="#" class="nav-item" data-module="reportes">
-            <span class="nav-icon">📊</span>
-            <span>Reportes de Inventario</span>
-        </a>
-        <a href="#" class="nav-item" data-module="empresas">
-            <span class="nav-icon">🏢</span>
-            <span>Gestión Multi-Compañía</span>
-        </a>
-        <a href="#" class="nav-item" data-module="configuracion">
-            <span class="nav-icon">⚙️</span>
-            <span>Configuración</span>
-        </a>
+        <!-- Dynamic pages will be loaded here -->
     </nav>
 
     <!-- Contenido Principal -->
@@ -796,134 +761,8 @@
             <p class="section-subtitle">Acceda a las funcionalidades principales del sistema</p>
         </section>
 
-        <section class="modules-grid">
-            <!-- Tier 1: Módulos Activos -->
-            <div class="module-card primary fade-in" onclick="navigateToArticulos()" style="animation-delay: 0.1s">
-                <div class="module-status active">ACTIVO</div>
-                <span class="module-icon">📦</span>
-                <h3 class="module-title">Consulta de Artículos</h3>
-                <p class="module-description">
-                    Busque y consulte artículos consolidados de todas las compañías en tiempo real
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag">Multi-país</span>
-                    <span class="feature-tag">Tiempo real</span>
-                </div>
-            </div>
-
-            <div class="module-card primary fade-in" onclick="navigateToSalesOrders()" style="animation-delay: 0.15s">
-                <div class="module-status active">ACTIVO</div>
-                <span class="module-icon">📋</span>
-                <h3 class="module-title">Órdenes de Venta</h3>
-                <p class="module-description">
-                    Cree y gestione órdenes de venta en el sistema <span id="appNameSales">Loading...</span>
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag">Crear</span>
-                    <span class="feature-tag">Gestionar</span>
-                </div>
-            </div>
-
-            <div class="module-card primary fade-in" onclick="navigateToSalesQuotes()" style="animation-delay: 0.2s">
-                <div class="module-status active">ACTIVO</div>
-                <span class="module-icon">💼</span>
-                <h3 class="module-title">Ofertas de Venta</h3>
-                <p class="module-description">
-                    Cree ofertas comerciales y conviértalas en órdenes de venta
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag">Cotizaciones</span>
-                    <span class="feature-tag">Conversión</span>
-                </div>
-            </div>
-
-            <div class="module-card primary fade-in" onclick="navigateToExchangeRates()" style="animation-delay: 0.25s">
-                <div class="module-status active">ACTIVO</div>
-                <span class="module-icon">💱</span>
-                <h3 class="module-title">Tipos de Cambio</h3>
-                <p class="module-description">
-                    Gestione tipos de cambio del BCCR y actualice SAP automáticamente
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag">BCCR API</span>
-                    <span class="feature-tag">Auto-sync</span>
-                </div>
-            </div>
-
-            <div class="module-card primary fade-in" onclick="navigateToEEFFReports()" style="animation-delay: 0.3s">
-                <div class="module-status active">ACTIVO</div>
-                <span class="module-icon">📈</span>
-                <h3 class="module-title">Reportes EEFF</h3>
-                <p class="module-description">
-                    Genere estados financieros consolidados multi-compañía
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag">Estados Financieros</span>
-                    <span class="feature-tag">Consolidado</span>
-                </div>
-            </div>
-
-            <div class="module-card primary fade-in" onclick="navigateToFichasTecnicas()" style="animation-delay: 0.35s">
-                <div class="module-status active">ACTIVO</div>
-                <span class="module-icon">📋</span>
-                <h3 class="module-title">Fichas Técnicas (@FFF)</h3>
-                <p class="module-description">
-                    Gestione fichas técnicas de productos en la base de datos Guatemala
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag">UDO @FFF</span>
-                    <span class="feature-tag">Guatemala</span>
-                </div>
-            </div>
-
-            <!-- Tier 2: Módulos en Desarrollo -->
-            <div class="module-card secondary fade-in" onclick="comingSoon('Gestión Multi-Compañía')" style="animation-delay: 0.4s">
-                <div class="module-status development">EN DESARROLLO</div>
-                <span class="module-icon">🏢</span>
-                <h3 class="module-title">Gestión Multi-Compañía</h3>
-                <p class="module-description">
-                    Configure y administre conexiones a múltiples bases de datos
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag coming-soon">Próximamente</span>
-                </div>
-            </div>
-
-            <div class="module-card secondary fade-in" onclick="comingSoon('Dashboard Analítico')" style="animation-delay: 0.45s">
-                <div class="module-status development">EN DESARROLLO</div>
-                <span class="module-icon">📊</span>
-                <h3 class="module-title">Dashboard Analítico</h3>
-                <p class="module-description">
-                    Visualice métricas y análisis de datos en tiempo real
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag coming-soon">Próximamente</span>
-                </div>
-            </div>
-
-            <div class="module-card secondary fade-in" onclick="comingSoon('Inventarios')" style="animation-delay: 0.5s">
-                <div class="module-status development">EN DESARROLLO</div>
-                <span class="module-icon">📋</span>
-                <h3 class="module-title">Reportes de Inventario</h3>
-                <p class="module-description">
-                    Consulte niveles de inventario y movimientos por almacén
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag coming-soon">Próximamente</span>
-                </div>
-            </div>
-
-            <div class="module-card secondary fade-in" onclick="comingSoon('Herramientas')" style="animation-delay: 0.55s">
-                <div class="module-status development">EN DESARROLLO</div>
-                <span class="module-icon">🛠️</span>
-                <h3 class="module-title">Herramientas del Sistema</h3>
-                <p class="module-description">
-                    Acceda a utilidades y herramientas de mantenimiento
-                </p>
-                <div class="module-features">
-                    <span class="feature-tag coming-soon">Próximamente</span>
-                </div>
-            </div>
+        <section class="modules-grid" id="modulesGrid">
+            <!-- Dynamic module cards will be loaded here -->
         </section>
 
         <!-- Estado del Sistema Multi-Compañía -->
@@ -1161,6 +1000,104 @@
             window.location.href = '/fichas-tecnicas';
         }
 
+        function navigateToAdminPermisos() {
+            console.log('navigateToAdminPermisos called - navigating to /admin-permisos');
+            window.location.href = '/admin-permisos';
+        }
+
+        function navigateToConfigSistema() {
+            console.log('navigateToConfigSistema called - navigating to /config-sistema');
+            window.location.href = '/config-sistema';
+        }
+
+        // Load user pages from API
+        async function loadUserPages() {
+            try {
+                const authData = checkAuth();
+                if (!authData) return;
+
+                const response = await fetch('/api/admin/menu/my-pages', {
+                    headers: {
+                        'x-sap-username': authData.username
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.pages) {
+                    buildNavigationMenu(data.pages);
+                    buildModuleCards(data.pages);
+                    console.log('User pages loaded:', data.pages.length);
+                } else {
+                    console.warn('No pages assigned to user');
+                }
+            } catch (error) {
+                console.error('Error loading user pages:', error);
+            }
+        }
+
+        // Build navigation menu from pages
+        function buildNavigationMenu(pages) {
+            const navMenu = document.getElementById('navigationMenu');
+
+            // Keep dashboard item, clear others
+            navMenu.innerHTML = `
+                <a href="#" class="nav-item active" data-module="dashboard">
+                    <span class="nav-icon">🏠</span>
+                    <span>Dashboard</span>
+                </a>
+            `;
+
+            // Filter out dashboard page and add the rest
+            pages.filter(page => !page.path.includes('dashboard')).forEach(page => {
+                const navItem = document.createElement('a');
+                navItem.href = '#';
+                navItem.className = 'nav-item';
+                navItem.setAttribute('data-module', page.path.replace('.html', '').replace('/', ''));
+                navItem.onclick = () => navigateToPage(page.path);
+
+                navItem.innerHTML = `
+                    <span class="nav-icon"><i class="${page.icon || 'fas fa-file'}"></i></span>
+                    <span>${page.name}</span>
+                `;
+
+                navMenu.appendChild(navItem);
+            });
+        }
+
+        // Build module cards from pages
+        function buildModuleCards(pages) {
+            const modulesGrid = document.getElementById('modulesGrid');
+            modulesGrid.innerHTML = '';
+
+            // Filter out dashboard page and create cards for the rest
+            pages.filter(page => !page.path.includes('dashboard')).forEach((page, index) => {
+                const delay = 0.1 + (index * 0.05);
+                const moduleCard = document.createElement('div');
+                moduleCard.className = 'module-card primary fade-in';
+                moduleCard.style.animationDelay = `${delay}s`;
+                moduleCard.onclick = () => navigateToPage(page.path);
+
+                moduleCard.innerHTML = `
+                    <div class="module-status active">ACTIVO</div>
+                    <span class="module-icon"><i class="${page.icon || 'fas fa-file'}"></i></span>
+                    <h3 class="module-title">${page.name}</h3>
+                    <p class="module-description">${page.description || 'Módulo del sistema'}</p>
+                    <div class="module-features">
+                        <span class="feature-tag">Disponible</span>
+                    </div>
+                `;
+
+                modulesGrid.appendChild(moduleCard);
+            });
+        }
+
+        // Navigate to a page
+        function navigateToPage(path) {
+            console.log('Navigating to:', path);
+            window.location.href = path;
+        }
+
         // Coming soon placeholder
         function comingSoon(moduleName) {
             console.log('comingSoon() function called for module:', moduleName);
@@ -1247,20 +1184,24 @@
                 const response = await fetch('/api/config');
                 const config = await response.json();
                 window.appConfig = config;
-                
-                // Update app name in all locations
-                document.getElementById('pageTitle').textContent = `${config.appName} - Dashboard Principal`;
-                document.getElementById('appNameHeader').textContent = config.appName;
-                document.getElementById('appNameSales').textContent = config.appName;
-                
+
+                // Update app name in all locations (only if elements exist)
+                const pageTitle = document.getElementById('pageTitle');
+                const appNameHeader = document.getElementById('appNameHeader');
+
+                if (pageTitle) pageTitle.textContent = `${config.appName} - Dashboard Principal`;
+                if (appNameHeader) appNameHeader.textContent = config.appName;
+
                 console.log('App configuration loaded:', config);
             } catch (error) {
                 console.error('Error loading app configuration:', error);
                 // Fallback to default
-                const fallbackName = 'My Application';
-                document.getElementById('pageTitle').textContent = `${fallbackName} - Dashboard Principal`;
-                document.getElementById('appNameHeader').textContent = fallbackName;
-                document.getElementById('appNameSales').textContent = fallbackName;
+                const fallbackName = 'STIA - Sistema Multi-Regional';
+                const pageTitle = document.getElementById('pageTitle');
+                const appNameHeader = document.getElementById('appNameHeader');
+
+                if (pageTitle) pageTitle.textContent = `${fallbackName} - Dashboard Principal`;
+                if (appNameHeader) appNameHeader.textContent = fallbackName;
             }
         }
 
@@ -1269,19 +1210,20 @@
             await loadAppConfig();
             checkAuth();
             loadUserInfo();
+            await loadUserPages(); // Load dynamic pages from user's assigned roles
             loadExchangeRate();
             verificarConexiones();
-            
+
             // Update session duration every minute
             setInterval(updateSessionDuration, 60000);
             updateSessionDuration();
-            
+
             // Update exchange rate every 15 minutes
             setInterval(loadExchangeRate, 15 * 60 * 1000);
-            
+
             // Update connections every 30 seconds
             setInterval(verificarConexiones, 30000);
-            
+
             console.log('Dashboard loaded successfully');
         });
     </script>
