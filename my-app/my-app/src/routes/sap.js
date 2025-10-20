@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const sapService = require('../services/sapService');
+const sessionRenewalService = require('../services/sessionRenewalService');
 const logger = require('../config/logger');
 const { asyncHandler } = require('../middleware/errorHandler');
 const redisManager = require('../config/redis');
@@ -113,12 +114,16 @@ router.post('/login', asyncHandler(async (req, res) => {
     });
 
     if (result.success) {
+      // Store credentials for automatic session renewal
+      sessionRenewalService.storeCredentials(username, password, companyDB);
+
       // Store session in memory or Redis for session management
       res.json({
         success: true,
         message: 'Login successful',
         sessionId: result.sessionId,
         companyDB: companyDB,
+        sessionTimeout: result.sessionTimeout || 30,
         timestamp: new Date().toISOString()
       });
     } else {
@@ -227,7 +232,7 @@ router.post('/login-all', asyncHandler(async (req, res) => {
 
 // SAP Service Layer Logout
 router.post('/logout', asyncHandler(async (req, res) => {
-  const { sessionId, companyDB } = req.body;
+  const { sessionId, companyDB, username } = req.body;
 
   if (!sessionId) {
     return res.status(400).json({
@@ -238,12 +243,18 @@ router.post('/logout', asyncHandler(async (req, res) => {
 
   logger.info('SAP Service Layer logout requested', {
     companyDB,
+    username,
     requestId: req.requestId
   });
 
   try {
     const result = await sapService.logoutFromServiceLayer(sessionId);
-    
+
+    // Remove stored credentials on logout
+    if (username) {
+      sessionRenewalService.removeCredentials(username);
+    }
+
     logger.info('SAP Service Layer logout completed', {
       companyDB,
       success: result.success,
@@ -265,6 +276,71 @@ router.post('/logout', asyncHandler(async (req, res) => {
     res.json({
       success: false,
       error: error.userMessage || 'Logout failed',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
+// Renew SAP Session automatically
+router.post('/renew-session', asyncHandler(async (req, res) => {
+  const { username } = req.body;
+
+  if (!username) {
+    return res.status(400).json({
+      success: false,
+      error: 'Username is required for session renewal'
+    });
+  }
+
+  logger.info('SAP Session renewal requested', {
+    username,
+    requestId: req.requestId
+  });
+
+  try {
+    const result = await sessionRenewalService.renewSession(username);
+
+    if (result.success) {
+      logger.info('SAP Session renewal successful', {
+        username,
+        newSessionId: result.sessionId ? 'present' : 'missing',
+        requestId: req.requestId
+      });
+
+      res.json({
+        success: true,
+        message: 'Session renewed successfully',
+        sessionId: result.sessionId,
+        companyDB: result.companyDB,
+        sessionTimeout: result.sessionTimeout,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      logger.warn('SAP Session renewal failed', {
+        username,
+        error: result.error,
+        message: result.message,
+        requestId: req.requestId
+      });
+
+      res.status(401).json({
+        success: false,
+        error: result.error,
+        message: result.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    logger.error('SAP Session renewal error', {
+      username,
+      error: error.message,
+      requestId: req.requestId
+    });
+
+    res.status(500).json({
+      success: false,
+      error: 'Session renewal failed',
+      details: error.message,
       timestamp: new Date().toISOString()
     });
   }
