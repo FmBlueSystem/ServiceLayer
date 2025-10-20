@@ -220,6 +220,19 @@ router.post('/login-all', asyncHandler(async (req, res) => {
     requestId: req.requestId
   });
 
+  // Store credentials for automatic session renewal with first successful database
+  if (successCount > 0) {
+    // Find first successful database
+    const firstSuccessfulDB = loginResultsArray.find(result => result.success);
+    if (firstSuccessfulDB) {
+      sessionRenewalService.storeCredentials(username, password, firstSuccessfulDB.companyDB);
+      logger.info('Credentials stored for session renewal', {
+        username,
+        companyDB: firstSuccessfulDB.companyDB
+      });
+    }
+  }
+
   res.json({
     success: successCount > 0,
     message: `Successfully logged into ${successCount} of ${databases.length} databases`,
