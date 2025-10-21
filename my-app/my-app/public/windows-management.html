@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión Windows Server - SAP Service Layer</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- App Theme -->
+    <link rel="stylesheet" href="/css/app-theme.css">
+
+    <!-- Session Manager -->
+    <script src="/js/sessionManager.js"></script>
+
+    <!-- Inactivity Manager - Auto logout después de 15 minutos -->
+    <script src="/js/inactivityManager.js"></script>
+
+    <style>
+        .status-card {
+            border-left: 4px solid #0d6efd;
+            transition: all 0.3s;
+        }
+        .status-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .status-healthy {
+            border-left-color: #198754;
+        }
+        .status-warning {
+            border-left-color: #ffc107;
+        }
+        .status-error {
+            border-left-color: #dc3545;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .progress-bar-animated-custom {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+        .service-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .service-row:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .status-badge {
+            min-width: 80px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-overlay.active {
+            display: flex;
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard.html">
+                <i class="fas fa-industry"></i> SAP Service Layer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="navbar-text text-light me-3">
+                            <i class="fas fa-user"></i>
+                            <span id="displayUsername">Usuario</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard.html">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row mb-4">
+            <div class="col">
+                <h1><i class="fas fa-server"></i> Gestión Windows Server</h1>
+                <p class="text-muted">Monitoreo y gestión remota del servidor de producción (10.13.0.29)</p>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" onclick="refreshAll()">
+                    <i class="fas fa-sync"></i> Refrescar Todo
+                </button>
+            </div>
+        </div>
+
+        <!-- Server Status Card -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card status-card" id="serverStatusCard">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <i class="fas fa-server fa-3x text-primary"></i>
+                            </div>
+                            <div class="col">
+                                <h5 class="card-title">Estado del Servidor</h5>
+                                <p class="card-text" id="serverStatusText">Verificando conectividad...</p>
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge bg-secondary" id="serverStatusBadge">Desconocido</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resource Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            <i class="fas fa-microchip"></i> Uso de CPU
+                        </h6>
+                        <div class="metric-value text-primary" id="cpuUsage">--</div>
+                        <div class="progress mt-2">
+                            <div class="progress-bar" id="cpuProgress" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            <i class="fas fa-memory"></i> Uso de Memoria
+                        </h6>
+                        <div class="metric-value text-success" id="memoryUsage">--</div>
+                        <div class="progress mt-2">
+                            <div class="progress-bar bg-success" id="memoryProgress" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted" id="memoryDetails">-- / --</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            <i class="fas fa-hdd"></i> Espacio en Disco
+                        </h6>
+                        <div class="metric-value text-warning" id="diskUsage">--</div>
+                        <div id="diskList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Management -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-cogs"></i> Servicios de Windows</h5>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadServices()">
+                            <i class="fas fa-sync"></i> Actualizar
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Nombre de Visualización</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="servicesTableBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center">
+                                            <div class="spinner-border spinner-border-sm" role="status">
+                                                <span class="visually-hidden">Cargando...</span>
+                                            </div>
+                                            Cargando servicios...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Command Executor -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-terminal"></i> Ejecutor de Comandos</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="commandType" class="form-label">Tipo de Comando</label>
+                            <select class="form-select" id="commandType">
+                                <option value="cmd">CMD (Command Prompt)</option>
+                                <option value="powershell">PowerShell</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="commandInput" class="form-label">Comando</label>
+                            <textarea class="form-control font-monospace" id="commandInput" rows="3"
+                                placeholder="Ejemplo: systeminfo"></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="executeCommand()">
+                            <i class="fas fa-play"></i> Ejecutar
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearOutput()">
+                            <i class="fas fa-trash"></i> Limpiar Salida
+                        </button>
+                        <div class="mt-3">
+                            <h6>Salida:</h6>
+                            <div class="console-output" id="commandOutput">
+                                <div class="text-muted">La salida del comando aparecerá aquí...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts -->
+    <script>
+        // Verificar autenticación
+        function checkAuth() {
+            const username = localStorage.getItem('username');
+            const sessionId = localStorage.getItem('sessionId');
+
+            if (!username || !sessionId) {
+                window.location.href = '/login-simple.html';
+                return false;
+            }
+
+            document.getElementById('displayUsername').textContent = username;
+            return true;
+        }
+
+        // Logout
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login-simple.html';
+        }
+
+        // Show loading
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+
+        // Hide loading
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        // Check connectivity
+        async function checkConnectivity() {
+            try {
+                const response = await fetch('/api/windows/connectivity');
+                const result = await response.json();
+
+                const card = document.getElementById('serverStatusCard');
+                const text = document.getElementById('serverStatusText');
+                const badge = document.getElementById('serverStatusBadge');
+
+                if (result.reachable) {
+                    card.classList.add('status-healthy');
+                    card.classList.remove('status-error');
+                    text.textContent = 'Servidor conectado y operativo';
+                    badge.textContent = 'Conectado';
+                    badge.className = 'badge bg-success';
+                } else {
+                    card.classList.add('status-error');
+                    card.classList.remove('status-healthy');
+                    text.textContent = `No se puede conectar al servidor: ${result.message}`;
+                    badge.textContent = 'Desconectado';
+                    badge.className = 'badge bg-danger';
+                }
+
+                return result.reachable;
+            } catch (error) {
+                console.error('Error checking connectivity:', error);
+                const card = document.getElementById('serverStatusCard');
+                card.classList.add('status-error');
+                document.getElementById('serverStatusText').textContent = 'Error al verificar conectividad';
+                document.getElementById('serverStatusBadge').textContent = 'Error';
+                document.getElementById('serverStatusBadge').className = 'badge bg-danger';
+                return false;
+            }
+        }
+
+        // Load resource usage
+        async function loadResources() {
+            try {
+                const response = await fetch('/api/windows/resources');
+                const result = await response.json();
+
+                if (result.success) {
+                    const data = result.data;
+
+                    // CPU
+                    document.getElementById('cpuUsage').textContent = `${data.cpu.toFixed(1)}%`;
+                    const cpuProgress = document.getElementById('cpuProgress');
+                    cpuProgress.style.width = `${data.cpu}%`;
+                    cpuProgress.className = `progress-bar ${data.cpu > 80 ? 'bg-danger' : data.cpu > 60 ? 'bg-warning' : ''}`;
+
+                    // Memory
+                    document.getElementById('memoryUsage').textContent = `${data.memoryPercent.toFixed(1)}%`;
+                    document.getElementById('memoryDetails').textContent =
+                        `${data.memoryUsedGB.toFixed(2)} GB / ${data.memoryTotalGB.toFixed(2)} GB`;
+                    const memProgress = document.getElementById('memoryProgress');
+                    memProgress.style.width = `${data.memoryPercent}%`;
+                    memProgress.className = `progress-bar ${data.memoryPercent > 80 ? 'bg-danger' : 'bg-success'}`;
+                }
+            } catch (error) {
+                console.error('Error loading resources:', error);
+            }
+        }
+
+        // Load disk space
+        async function loadDiskSpace() {
+            try {
+                const response = await fetch('/api/windows/disk-space');
+                const result = await response.json();
+
+                if (result.success) {
+                    const diskList = document.getElementById('diskList');
+                    diskList.innerHTML = result.data.map(disk => `
+                        <div class="mt-2">
+                            <small>${disk.DeviceID} ${disk.VolumeName || ''}</small>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar ${disk.UsedPercent > 90 ? 'bg-danger' : disk.UsedPercent > 80 ? 'bg-warning' : 'bg-info'}"
+                                     style="width: ${disk.UsedPercent}%">
+                                    ${disk.UsedPercent.toFixed(1)}%
+                                </div>
+                            </div>
+                            <small class="text-muted">${(disk.SizeGB - disk.FreeGB).toFixed(2)} GB de ${disk.SizeGB.toFixed(2)} GB</small>
+                        </div>
+                    `).join('');
+
+                    // Update main metric with C: drive
+                    const cDrive = result.data.find(d => d.DeviceID === 'C:');
+                    if (cDrive) {
+                        document.getElementById('diskUsage').textContent = `${cDrive.UsedPercent.toFixed(1)}%`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading disk space:', error);
+            }
+        }
+
+        // Load services
+        async function loadServices() {
+            const tbody = document.getElementById('servicesTableBody');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando servicios...</td></tr>';
+
+            try {
+                // Load common services
+                const serviceNames = ['W3SVC', 'MSSQLSERVER', 'sshd', 'EventLog', 'DNS'];
+                const response = await fetch(`/api/windows/services?names=${serviceNames.join(',')}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    tbody.innerHTML = result.data.map(service => `
+                        <tr class="service-row">
+                            <td>${service.Name}</td>
+                            <td>${service.DisplayName}</td>
+                            <td>
+                                <span class="badge status-badge ${service.Status === 'Running' ? 'bg-success' : 'bg-secondary'}">
+                                    ${service.Status}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="restartService('${service.Name}')">
+                                    <i class="fas fa-redo"></i> Reiniciar
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error: ${result.error}</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error loading services:', error);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar servicios</td></tr>';
+            }
+        }
+
+        // Restart service
+        async function restartService(serviceName) {
+            if (!confirm(`¿Está seguro de reiniciar el servicio ${serviceName}?`)) {
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`/api/windows/services/${serviceName}/restart`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`Servicio ${serviceName} reiniciado correctamente`);
+                    await loadServices();
+                } else {
+                    alert(`Error al reiniciar servicio: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error restarting service:', error);
+                alert('Error al reiniciar el servicio');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Execute command
+        async function executeCommand() {
+            const command = document.getElementById('commandInput').value.trim();
+            const type = document.getElementById('commandType').value;
+            const output = document.getElementById('commandOutput');
+
+            if (!command) {
+                alert('Por favor ingrese un comando');
+                return;
+            }
+
+            output.innerHTML = '<div class="text-info">Ejecutando comando...</div>';
+            showLoading();
+
+            try {
+                const response = await fetch('/api/windows/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command, type })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    output.innerHTML = `
+                        <div class="text-success mb-2">✓ Comando ejecutado (Exit Code: ${result.exitCode})</div>
+                        <div class="text-white-50 mb-2">--- STDOUT ---</div>
+                        <pre class="mb-2">${result.stdout || '(vacío)'}</pre>
+                        ${result.stderr ? `<div class="text-danger mb-2">--- STDERR ---</div><pre>${result.stderr}</pre>` : ''}
+                    `;
+                } else {
+                    output.innerHTML = `
+                        <div class="text-danger">✗ Error al ejecutar comando</div>
+                        <pre>${result.error || 'Error desconocido'}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error executing command:', error);
+                output.innerHTML = `<div class="text-danger">Error: ${error.message}</div>`;
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Clear output
+        function clearOutput() {
+            document.getElementById('commandOutput').innerHTML =
+                '<div class="text-muted">La salida del comando aparecerá aquí...</div>';
+        }
+
+        // Refresh all
+        async function refreshAll() {
+            showLoading();
+            const isConnected = await checkConnectivity();
+
+            if (isConnected) {
+                await Promise.all([
+                    loadResources(),
+                    loadDiskSpace(),
+                    loadServices()
+                ]);
+            }
+
+            hideLoading();
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkAuth()) return;
+
+            // Initial load
+            await refreshAll();
+
+            // Auto-refresh every 30 seconds
+            setInterval(async () => {
+                await loadResources();
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

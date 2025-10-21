@@ -220,17 +220,21 @@ router.post('/login-all', asyncHandler(async (req, res) => {
     requestId: req.requestId
   });
 
-  // Store credentials for automatic session renewal with first successful database
+  // Store credentials for automatic session renewal for ALL successful databases
   if (successCount > 0) {
-    // Find first successful database
-    const firstSuccessfulDB = loginResultsArray.find(result => result.success);
-    if (firstSuccessfulDB) {
-      sessionRenewalService.storeCredentials(username, password, firstSuccessfulDB.companyDB);
-      logger.info('Credentials stored for session renewal', {
-        username,
-        companyDB: firstSuccessfulDB.companyDB
-      });
-    }
+    let storedCount = 0;
+    loginResultsArray.forEach(result => {
+      if (result.success) {
+        sessionRenewalService.storeCredentials(username, password, result.companyDB);
+        storedCount++;
+      }
+    });
+
+    logger.info('Credentials stored for multi-database session renewal', {
+      username,
+      storedDatabases: storedCount,
+      successfulLogins: successCount
+    });
   }
 
   res.json({
@@ -296,7 +300,7 @@ router.post('/logout', asyncHandler(async (req, res) => {
 
 // Renew SAP Session automatically
 router.post('/renew-session', asyncHandler(async (req, res) => {
-  const { username } = req.body;
+  const { username, companyDB } = req.body;
 
   if (!username) {
     return res.status(400).json({
@@ -307,15 +311,18 @@ router.post('/renew-session', asyncHandler(async (req, res) => {
 
   logger.info('SAP Session renewal requested', {
     username,
+    companyDB: companyDB || 'default',
     requestId: req.requestId
   });
 
   try {
-    const result = await sessionRenewalService.renewSession(username);
+    // Si se proporciona companyDB, renovar sesión específica
+    const result = await sessionRenewalService.renewSession(username, companyDB);
 
     if (result.success) {
       logger.info('SAP Session renewal successful', {
         username,
+        companyDB: result.companyDB,
         newSessionId: result.sessionId ? 'present' : 'missing',
         requestId: req.requestId
       });
@@ -331,6 +338,7 @@ router.post('/renew-session', asyncHandler(async (req, res) => {
     } else {
       logger.warn('SAP Session renewal failed', {
         username,
+        companyDB: companyDB || 'default',
         error: result.error,
         message: result.message,
         requestId: req.requestId
@@ -346,6 +354,7 @@ router.post('/renew-session', asyncHandler(async (req, res) => {
   } catch (error) {
     logger.error('SAP Session renewal error', {
       username,
+      companyDB: companyDB || 'default',
       error: error.message,
       requestId: req.requestId
     });

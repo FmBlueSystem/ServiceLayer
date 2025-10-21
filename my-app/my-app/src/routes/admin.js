@@ -670,6 +670,71 @@ router.get('/pages',
 );
 
 /**
+ * Actualizar el orden de visualización de las páginas
+ */
+router.put('/pages/reorder',
+    checkPermission(RESOURCES.CONFIGURACION, ACTIONS.UPDATE),
+    async (req, res) => {
+        try {
+            const { pages } = req.body;
+            const updatedBy = req.session.sapUsername;
+
+            if (!Array.isArray(pages)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'pages debe ser un array'
+                });
+            }
+
+            if (pages.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'El array de páginas no puede estar vacío'
+                });
+            }
+
+            // Validar que cada página tenga id y display_order
+            for (const page of pages) {
+                if (!page.id || page.display_order === undefined) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Cada página debe tener id y display_order'
+                    });
+                }
+            }
+
+            // Actualizar display_order en una transacción
+            await db.transaction(async (client) => {
+                for (const page of pages) {
+                    await client.query(
+                        'UPDATE pages SET display_order = $1 WHERE id = $2',
+                        [page.display_order, page.id]
+                    );
+                }
+            });
+
+            logger.info('Orden de páginas actualizado', {
+                pageCount: pages.length,
+                updatedBy
+            });
+
+            res.json({
+                success: true,
+                message: 'Orden de páginas actualizado correctamente'
+            });
+
+        } catch (error) {
+            logger.error('Error actualizando orden de páginas:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Error al actualizar orden de páginas',
+                details: error.message
+            });
+        }
+    }
+);
+
+/**
  * Obtener páginas asignadas a un rol/grupo
  */
 router.get('/roles/:roleId/pages',

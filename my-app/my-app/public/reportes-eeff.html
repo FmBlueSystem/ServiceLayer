@@ -286,6 +286,8 @@
             }
         }
     </style>
+    <!-- Session Manager para renovación automática -->
+    <script src="/js/sessionManager.js"></script>
 </head>
 <body>
     <div class="header">
@@ -412,7 +414,7 @@
             hideAlerts();
 
             try {
-                const response = await fetch('/api/sap/financial-report', {
+                const response = await fetchWithAutoRenewal('/api/sap/financial-report', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

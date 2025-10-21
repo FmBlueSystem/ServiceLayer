@@ -583,3 +583,114 @@ node scripts/validate-image.js my-app:windows
 ```
 
 This README provides comprehensive documentation for developing, building, testing, and deploying the multiplatform containerized application. The application is designed to work seamlessly across macOS development and Windows production environments with full Docker support and automated migration tools.
+
+---
+
+## 📚 SAP Service Layer Documentation
+
+This project is a **SAP Business One Service Layer** integration application with advanced features:
+
+### Core Documentation
+
+| Documento | Descripción |
+|-----------|-------------|
+| **[CLAUDE.md](./CLAUDE.md)** | 📋 **INSTRUCCIONES PARA CLAUDE** - Guía completa para agregar nuevas páginas, sistema de permisos, y procedimientos estándar |
+| [IMPLEMENTACION_PERMISOS.md](./IMPLEMENTACION_PERMISOS.md) | 🔐 Sistema RBAC con roles, permisos granulares y gestión de usuarios |
+| [RENOVACION_AUTOMATICA_SESION.md](./RENOVACION_AUTOMATICA_SESION.md) | 🔄 Sistema de renovación automática de sesiones SAP |
+| [README_MIGRACION.md](./README_MIGRACION.md) | 📦 Paquete completo para migración a Windows Server |
+| [DASHBOARD_EJECUTIVO_INVENTARIO.md](./DASHBOARD_EJECUTIVO_INVENTARIO.md) | 📊 Dashboard multi-país de inventario |
+| [OFERTAS_VENTA_GUIA_INTEGRACION.md](./OFERTAS_VENTA_GUIA_INTEGRACION.md) | 📄 Integración con módulo de ofertas de venta SAP |
+
+### 🚀 Características Principales
+
+- **Autenticación Multi-Database:** Login simultáneo a múltiples bases de datos SAP
+- **Sistema de Permisos RBAC:** Control granular de acceso por roles y páginas
+- **Renovación Automática de Sesión:** Las sesiones SAP se renuevan automáticamente sin intervención del usuario
+- **Dashboard Dinámico:** Las páginas se muestran según los permisos del usuario
+- **Gestión de Usuarios:** Sincronización desde SAP con activación/desactivación
+- **Configuración del Sistema:** Cambios de configuración sin reiniciar el servidor
+- **Auditoría:** Registro completo de cambios en configuración y permisos
+
+### 🔧 Herramientas de Desarrollo
+
+#### Scripts de Utilidad
+
+```bash
+# Ejecutar migración de base de datos
+node scripts/run-migration.js <archivo.sql>
+
+# Verificar páginas registradas
+node scripts/verify-pages.js
+
+# Verificar estado del sistema (Windows)
+.\scripts\windows\check-status.ps1
+
+# Backup de base de datos (Windows)
+.\scripts\windows\backup-database.ps1
+```
+
+### 📝 Agregar Nueva Página al Sistema
+
+**⚠️ IMPORTANTE:** Al crear una nueva página, seguir el proceso documentado en **[CLAUDE.md](./CLAUDE.md)**
+
+Resumen del proceso:
+1. Crear archivo HTML en `/public/`
+2. Incluir Session Manager y autenticación
+3. Crear migración SQL en `/database/migrations/`
+4. Ejecutar migración con `node scripts/run-migration.js`
+5. Verificar integración con `node scripts/verify-pages.js`
+
+**NO OMITIR NINGÚN PASO** - Ver [CLAUDE.md](./CLAUDE.md) para detalles completos.
+
+### 🏗️ Arquitectura SAP
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                         Frontend (HTML)                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
+│  │  Dashboard   │  │  Artículos   │  │   Ofertas    │  ...    │
+│  └──────────────┘  └──────────────┘  └──────────────┘         │
+├────────────────────────────────────────────────────────────────┤
+│                    Node.js + Express Backend                    │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Session Renewal Service │ Permission Service │ SAP API  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+├────────────────────────────────────────────────────────────────┤
+│                        Data Layer                               │
+│  ┌─────────────┐  ┌─────────────┐  ┌────────────────────┐    │
+│  │ PostgreSQL  │  │    Redis    │  │  SAP HANA (B1)     │    │
+│  │ (Permisos)  │  │   (Cache)   │  │  (Service Layer)   │    │
+│  └─────────────┘  └─────────────┘  └────────────────────┘    │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### 📊 Estructura de Base de Datos
+
+Tablas principales:
+- `users` - Usuarios sincronizados desde SAP
+- `roles` - Roles/Grupos de permisos
+- `permissions` - Permisos granulares (resource:action)
+- `pages` - Páginas disponibles en el sistema
+- `role_pages` - Asignación de páginas a roles
+- `user_roles` - Asignación de usuarios a roles
+- `system_config` - Configuración del sistema
+- `config_audit` - Auditoría de cambios
+
+### 🔗 Enlaces Útiles
+
+- **Dashboard Principal:** `/dashboard.html`
+- **Admin Permisos:** `/admin-permisos.html`
+- **Config Sistema:** `/config-sistema.html`
+- **Dashboard Inventario:** `/dashboard-inventario.html`
+
+### 📞 Para Claude
+
+Si necesitas agregar nueva funcionalidad, crear páginas, o realizar cambios al sistema:
+1. **Consulta primero [CLAUDE.md](./CLAUDE.md)** para seguir los procedimientos establecidos
+2. Ejecuta todos los pasos de validación
+3. Documenta los cambios realizados
+
+---
+
+**Última actualización:** 2025-10-20
+**Versión del Sistema:** SAP Service Layer v2.0

@@ -11,6 +11,10 @@
     <!-- jsPDF para generar PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- Multi-Session Manager para renovación automática de múltiples sesiones -->
+    <script src="/js/multiSessionManager.js"></script>
+    <!-- Inactivity Manager para auto-logout después de 15 minutos -->
+    <script src="/js/inactivityManager.js"></script>
     <style>
         /* Page-specific styles only - removing duplicates from app-theme.css */
         
@@ -826,7 +830,7 @@
                             }
                         };
 
-                        const response = await fetch('/api/sap/items', {
+                        const response = await fetchWithMultiSessionRenewal('/api/sap/items', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'

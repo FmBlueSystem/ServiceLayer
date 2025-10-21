@@ -46,7 +46,17 @@ class SessionRenewalService {
     }
 
     /**
+     * Generar clave de almacenamiento
+     * Para multi-database: "username:companyDB"
+     * Para single-database: "username"
+     */
+    _getStorageKey(username, companyDB = null) {
+        return companyDB ? `${username}:${companyDB}` : username;
+    }
+
+    /**
      * Guardar credenciales de usuario de forma segura
+     * Soporta tanto single-database como multi-database
      * @param {string} username - Nombre de usuario
      * @param {string} password - Contraseña
      * @param {string} companyDB - Base de datos de la compañía
@@ -54,8 +64,9 @@ class SessionRenewalService {
     storeCredentials(username, password, companyDB) {
         try {
             const encryptedPassword = this.encrypt(password);
+            const storageKey = this._getStorageKey(username, companyDB);
 
-            this.credentialsStore.set(username, {
+            this.credentialsStore.set(storageKey, {
                 username,
                 encryptedPassword,
                 companyDB,
@@ -64,13 +75,15 @@ class SessionRenewalService {
 
             logger.info('User credentials stored securely for session renewal', {
                 username,
-                companyDB
+                companyDB,
+                storageKey
             });
 
             return true;
         } catch (error) {
             logger.error('Error storing credentials', {
                 username,
+                companyDB,
                 error: error.message
             });
             return false;
@@ -79,14 +92,25 @@ class SessionRenewalService {
 
     /**
      * Obtener credenciales guardadas
+     * Soporta tanto single-database como multi-database
      * @param {string} username - Nombre de usuario
+     * @param {string} companyDB - (Opcional) Base de datos específica para multi-database
      * @returns {Object|null} Credenciales desencriptadas
      */
-    getCredentials(username) {
+    getCredentials(username, companyDB = null) {
         try {
-            const stored = this.credentialsStore.get(username);
+            const storageKey = this._getStorageKey(username, companyDB);
+            const stored = this.credentialsStore.get(storageKey);
 
             if (!stored) {
+                // Si no se encuentra con companyDB, intentar sin él (backwards compatibility)
+                if (companyDB) {
+                    logger.debug('Credentials not found with companyDB, trying without', {
+                        username,
+                        companyDB
+                    });
+                    return this.getCredentials(username, null);
+                }
                 return null;
             }
 
@@ -100,6 +124,7 @@ class SessionRenewalService {
         } catch (error) {
             logger.error('Error retrieving credentials', {
                 username,
+                companyDB,
                 error: error.message
             });
             return null;
@@ -117,18 +142,26 @@ class SessionRenewalService {
 
     /**
      * Renovar sesión SAP automáticamente
+     * Soporta tanto single-database como multi-database
      * @param {string} username - Nombre de usuario
+     * @param {string} companyDB - (Opcional) Base de datos específica para renovar (para multi-database)
      * @returns {Promise<Object>} Nueva sesión o error
      */
-    async renewSession(username) {
+    async renewSession(username, companyDB = null) {
         try {
-            logger.info('Attempting automatic session renewal', { username });
+            logger.info('Attempting automatic session renewal', {
+                username,
+                companyDB: companyDB || 'default'
+            });
 
-            // Obtener credenciales guardadas
-            const credentials = this.getCredentials(username);
+            // Obtener credenciales guardadas (con o sin companyDB)
+            const credentials = this.getCredentials(username, companyDB);
 
             if (!credentials) {
-                logger.warn('No stored credentials found for session renewal', { username });
+                logger.warn('No stored credentials found for session renewal', {
+                    username,
+                    companyDB: companyDB || 'default'
+                });
                 return {
                     success: false,
                     error: 'NO_CREDENTIALS',
@@ -136,9 +169,17 @@ class SessionRenewalService {
                 };
             }
 
+            // Usar el companyDB del credential store (que puede ser diferente si viene de single-database)
+            const targetCompanyDB = credentials.companyDB;
+
+            logger.info('Renewing session with SAP Service Layer', {
+                username,
+                companyDB: targetCompanyDB
+            });
+
             // Intentar login nuevamente con SAP
             const loginResult = await sapService.loginToServiceLayer(
-                credentials.companyDB,
+                targetCompanyDB,
                 credentials.username,
                 credentials.password
             );
@@ -146,7 +187,7 @@ class SessionRenewalService {
             if (loginResult.success) {
                 logger.info('Session renewed successfully', {
                     username,
-                    companyDB: credentials.companyDB,
+                    companyDB: targetCompanyDB,
                     newSessionId: loginResult.sessionId ? 'present' : 'missing'
                 });
 
@@ -154,12 +195,13 @@ class SessionRenewalService {
                     success: true,
                     sessionId: loginResult.sessionId,
                     sessionTimeout: loginResult.sessionTimeout,
-                    companyDB: loginResult.companyDB,
+                    companyDB: loginResult.companyDB || targetCompanyDB,
                     username: loginResult.username
                 };
             } else {
                 logger.error('Session renewal failed - login unsuccessful', {
                     username,
+                    companyDB: targetCompanyDB,
                     error: loginResult.error
                 });
 
@@ -173,6 +215,7 @@ class SessionRenewalService {
         } catch (error) {
             logger.error('Session renewal error', {
                 username,
+                companyDB: companyDB || 'default',
                 error: error.message
             });
 

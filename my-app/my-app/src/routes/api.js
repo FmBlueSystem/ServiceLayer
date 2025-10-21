@@ -478,4 +478,11 @@ router.use('/sap-validation', sapValidationRoutes);
 const adminRoutes = require('./admin');
 router.use('/admin', adminRoutes);
 
+// ============================================================================
+// WINDOWS SERVER MANAGEMENT ROUTES
+// ============================================================================
+
+const windowsRoutes = require('./windows');
+router.use('/windows', windowsRoutes);
+
 module.exports = router;

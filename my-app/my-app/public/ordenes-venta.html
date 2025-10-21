@@ -498,6 +498,8 @@
             }
         }
     </style>
+    <!-- Session Manager para renovación automática -->
+    <script src="/js/sessionManager.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -832,7 +834,7 @@
             try {
                 showAlert('Buscando clientes...', 'info');
 
-                const response = await fetch('/api/sap/business-partners', {
+                const response = await fetchWithAutoRenewal('/api/sap/business-partners', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1026,7 +1028,7 @@
             try {
                 showAlert('Creando orden de venta...', 'info');
 
-                const response = await fetch('/api/sap/create-sales-order', {
+                const response = await fetchWithAutoRenewal('/api/sap/create-sales-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1086,7 +1088,7 @@
         // Load orders for specific company
         async function loadOrdersForCompany(companyDB, sessionId) {
             try {
-                const response = await fetch('/api/sap/sales-orders', {
+                const response = await fetchWithAutoRenewal('/api/sap/sales-orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1147,7 +1149,7 @@
             for (const result of sapAuth.sessions) {
                 if (result.success) {
                     try {
-                        const response = await fetch('/api/sap/sales-orders', {
+                        const response = await fetchWithAutoRenewal('/api/sap/sales-orders', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({

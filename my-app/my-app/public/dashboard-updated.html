@@ -678,6 +678,7 @@
         <div class="header-left">
             <img src="/images/logo-stia.png" alt="STIA Comercializadora" class="sap-logo">
             <div class="user-info">
+                <span>👤 <span id="username">Usuario</span></span>
                 <div class="connection-indicators">
                     <span class="tooltip" data-tooltip="Guatemala">
                         <span class="country-indicator online" id="gt-status"></span>
@@ -846,7 +847,8 @@
             const authData = checkAuth();
             if (!authData) return;
 
-            // Set username in header
+            // Set username in both places
+            document.getElementById('username').textContent = authData.username;
             document.getElementById('usernameHeader').textContent = authData.username;
 
             // Set login time

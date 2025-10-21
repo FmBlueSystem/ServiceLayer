@@ -345,6 +345,8 @@
             }
         }
     </style>
+    <!-- Session Manager para renovación automática -->
+    <script src="/js/sessionManager.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -575,7 +577,7 @@
                 throw new Error('No hay sesión activa para la base de datos seleccionada');
             }
 
-            const response = await fetch('/api/sap/exchange-rates', {
+            const response = await fetchWithAutoRenewal('/api/sap/exchange-rates', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -606,7 +608,7 @@
                 throw new Error('No hay sesión activa para la base de datos seleccionada');
             }
 
-            const response = await fetch('/api/sap/exchange-rates/multi-country', {
+            const response = await fetchWithAutoRenewal('/api/sap/exchange-rates/multi-country', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -902,7 +904,7 @@
                     return;
                 }
 
-                const response = await fetch('/api/sap/exchange-rates/update', {
+                const response = await fetchWithAutoRenewal('/api/sap/exchange-rates/update', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

@@ -572,6 +572,8 @@
             }
         }
     </style>
+    <!-- Session Manager para renovación automática -->
+    <script src="/js/sessionManager.js"></script>
 </head>
 <body>
     <!-- Header -->
@@ -977,7 +979,7 @@
             try {
                 showAlert('Buscando clientes...', 'info');
 
-                const response = await fetch('/api/sap/business-partners', {
+                const response = await fetchWithAutoRenewal('/api/sap/business-partners', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1173,7 +1175,7 @@
             try {
                 showAlert('Creando oferta de venta...', 'info');
 
-                const response = await fetch('/api/sap/create-quotation', {
+                const response = await fetchWithAutoRenewal('/api/sap/create-quotation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1227,7 +1229,7 @@
                 
                 for (const result of sapAuth.sessions) {
                     if (result.success) {
-                        const response = await fetch('/api/sap/sales-orders', {
+                        const response = await fetchWithAutoRenewal('/api/sap/sales-orders', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1359,7 +1361,7 @@
         // Load quotations for specific company
         async function loadQuotationsForCompany(companyDB, sessionId) {
             try {
-                const response = await fetch('/api/sap/quotations', {
+                const response = await fetchWithAutoRenewal('/api/sap/quotations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1436,7 +1438,7 @@
             for (const result of sapAuth.sessions) {
                 if (result.success) {
                     try {
-                        const response = await fetch('/api/sap/quotations', {
+                        const response = await fetchWithAutoRenewal('/api/sap/quotations', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1481,7 +1483,7 @@
             try {
                 showAlert('Convirtiendo oferta a orden de venta...', 'info');
 
-                const response = await fetch('/api/sap/convert-quotation-to-order', {
+                const response = await fetchWithAutoRenewal('/api/sap/convert-quotation-to-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

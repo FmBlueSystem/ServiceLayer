@@ -276,6 +276,86 @@
             text-align: center;
             color: var(--sap-blue);
         }
+
+        /* Drag & Drop Page Ordering Styles */
+        .page-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: white;
+            border: 2px solid var(--sap-border);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: move;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .page-item:hover {
+            background: var(--sap-light-blue);
+            border-color: var(--sap-blue);
+            transform: translateX(5px);
+        }
+
+        .page-item.dragging {
+            opacity: 0.5;
+            background: #f0f0f0;
+            border-style: dashed;
+        }
+
+        .page-item.drag-over {
+            border-top: 3px solid var(--sap-blue);
+            margin-top: 20px;
+        }
+
+        .drag-handle {
+            font-size: 20px;
+            color: #999;
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .page-order-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 35px;
+            height: 35px;
+            background: var(--sap-blue);
+            color: white;
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .page-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-name {
+            font-weight: 600;
+            color: var(--sap-dark-blue);
+        }
+
+        .page-path {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .order-list-container {
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -501,6 +581,34 @@
             <div id="save-group-section" style="display: none; margin-top: 20px; text-align: right;">
                 <button class="btn btn-success" onclick="saveGroupPages()">
                     💾 Guardar Páginas del Grupo
+                </button>
+            </div>
+        </div>
+
+        <!-- Page Ordering Management -->
+        <div id="page-ordering-config" class="card" style="display: none;">
+            <h2>
+                🔢 Ordenar Páginas del Dashboard
+                <span class="category-badge category-general">ORDENAMIENTO</span>
+            </h2>
+
+            <div class="config-description" style="margin-bottom: 20px;">
+                Arrastra y suelta las páginas para definir el orden en que aparecen en el dashboard y menús.
+            </div>
+
+            <!-- Alert específica para ordenamiento -->
+            <div id="order-alert" class="alert" style="display: none; margin-bottom: 20px;"></div>
+
+            <div class="order-list-container" id="sortable-pages-list">
+                <div style="text-align: center; padding: 40px; color: #6c757d;">
+                    <div class="spinner"></div>
+                    <p>Cargando páginas...</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn btn-success" onclick="savePageOrder()" id="save-order-btn">
+                    💾 Guardar Orden
                 </button>
             </div>
         </div>
@@ -902,6 +1010,202 @@
             }
         }
 
+        // =====================================================
+        // GESTIÓN DE ORDENAMIENTO DE PÁGINAS
+        // =====================================================
+
+        let sortedPages = [];
+        let draggedElement = null;
+
+        // Cargar páginas para ordenamiento
+        async function loadPagesForOrdering() {
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                const response = await fetch('/api/admin/pages', {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    sortedPages = data.pages.sort((a, b) => a.display_order - b.display_order);
+                    renderSortablePages();
+                }
+            } catch (error) {
+                console.error('Error loading pages for ordering:', error);
+                showAlert('Error al cargar páginas', 'error');
+            }
+        }
+
+        // Renderizar lista de páginas arrastrables
+        function renderSortablePages() {
+            const container = document.getElementById('sortable-pages-list');
+            container.innerHTML = '';
+
+            sortedPages.forEach((page, index) => {
+                const pageElement = document.createElement('div');
+                pageElement.className = 'page-item';
+                pageElement.draggable = true;
+                pageElement.dataset.pageId = page.id;
+                pageElement.dataset.index = index;
+
+                pageElement.innerHTML = `
+                    <span class="drag-handle">⋮⋮</span>
+                    <div class="page-order-number">${index + 1}</div>
+                    <div class="page-info">
+                        <span class="page-icon"><i class="${page.icon || 'fas fa-file'}"></i></span>
+                        <div style="flex: 1;">
+                            <div class="page-name">${page.name}</div>
+                            <div class="page-path">${page.path}</div>
+                        </div>
+                    </div>
+                `;
+
+                // Event listeners para drag & drop
+                pageElement.addEventListener('dragstart', handleDragStart);
+                pageElement.addEventListener('dragover', handleDragOver);
+                pageElement.addEventListener('drop', handleDrop);
+                pageElement.addEventListener('dragend', handleDragEnd);
+                pageElement.addEventListener('dragenter', handleDragEnter);
+                pageElement.addEventListener('dragleave', handleDragLeave);
+
+                container.appendChild(pageElement);
+            });
+        }
+
+        // Manejadores de eventos drag & drop
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            if (this !== draggedElement) {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedElement !== this) {
+                // Obtener índices
+                const draggedIndex = parseInt(draggedElement.dataset.index);
+                const targetIndex = parseInt(this.dataset.index);
+
+                // Reordenar array
+                const draggedPage = sortedPages[draggedIndex];
+                sortedPages.splice(draggedIndex, 1);
+                sortedPages.splice(targetIndex, 0, draggedPage);
+
+                // Re-renderizar
+                renderSortablePages();
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+
+            // Limpiar clases drag-over de todos los elementos
+            document.querySelectorAll('.page-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        // Mostrar alerta específica para ordenamiento
+        function showOrderAlert(message, type = 'success') {
+            const alert = document.getElementById('order-alert');
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            alert.style.display = 'block';
+
+            // Auto-ocultar después de 8 segundos
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 8000);
+        }
+
+        // Guardar orden de páginas
+        async function savePageOrder() {
+            const btn = document.getElementById('save-order-btn');
+            const originalText = btn.textContent;
+
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                // Cambiar texto del botón para mostrar progreso
+                btn.textContent = '⏳ Guardando...';
+                btn.disabled = true;
+
+                // Construir array con nuevo orden
+                const pages = sortedPages.map((page, index) => ({
+                    id: page.id,
+                    display_order: (index + 1) * 10  // 10, 20, 30, etc.
+                }));
+
+                const response = await fetch('/api/admin/pages/reorder', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-sap-username': auth.username
+                    },
+                    body: JSON.stringify({ pages })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Mostrar mensaje de éxito en la alerta local
+                    showOrderAlert('✓ Orden de páginas guardado correctamente. Los cambios se verán reflejados en el dashboard.', 'success');
+
+                    // Cambiar temporalmente el botón a éxito
+                    btn.textContent = '✓ Guardado';
+                    btn.style.background = '#107E3E';
+
+                    // Recargar para refrescar display_order desde la BD
+                    await loadPagesForOrdering();
+
+                    // Restaurar botón después de 2 segundos
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                        btn.disabled = false;
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Error al guardar orden');
+                }
+            } catch (error) {
+                console.error('Error saving page order:', error);
+                showOrderAlert('❌ Error al guardar orden: ' + error.message, 'error');
+
+                // Restaurar botón
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             const auth = checkAuth();
@@ -909,9 +1213,11 @@
                 await loadConfig();
                 await loadGroups();
                 await loadAllPages();
+                await loadPagesForOrdering();
 
-                // Mostrar la card de grupos
+                // Mostrar las cards de configuración
                 document.getElementById('groups-config').style.display = 'block';
+                document.getElementById('page-ordering-config').style.display = 'block';
             }
         });
     </script>
