@@ -140,3 +140,4 @@ docker/ssl/*.crt
 **/secrets*.json
 *.p12
 *.pfx
+reset_password.sql
