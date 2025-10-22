@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Unit Fields - SAP Items</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0070e0;
+            border-bottom: 3px solid #0070e0;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #0070e0;
+        }
+        button {
+            background: #0070e0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005bb5;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .database-result {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        .database-result.success {
+            border-left: 4px solid #28a745;
+        }
+        .database-result.error {
+            border-left: 4px solid #dc3545;
+        }
+        .field-list {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        .unit-fields {
+            background: #e7f3ff;
+            padding: 10px;
+            border-left: 3px solid #0070e0;
+            margin: 10px 0;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #28a745;
+            color: white;
+        }
+        .status.error {
+            background: #dc3545;
+            color: white;
+        }
+        .loading {
+            color: #0070e0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test Unit Fields - SAP Items</h1>
+
+        <div class="test-section">
+            <h2>Validar Campos de Unidad en Todas las Bases de Datos</h2>
+            <p>Este test consultará un artículo de cada base de datos para ver qué campos de unidad están disponibles.</p>
+
+            <button onclick="runTest()" id="testBtn">▶ Ejecutar Test en Todas las BD</button>
+            <button onclick="clearResults()">🗑 Limpiar Resultados</button>
+        </div>
+
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const databases = [
+            { code: 'GT', name: 'Guatemala', db: 'SBO_GT_STIA_PROD', flag: '🇬🇹' },
+            { code: 'HN', name: 'Honduras', db: 'SBO_HO_STIA_PROD', flag: '🇭🇳' },
+            { code: 'PA', name: 'Panamá', db: 'SBO_PA_STIA_PROD', flag: '🇵🇦' },
+            { code: 'CR', name: 'Costa Rica', db: 'SBO_STIACR_PROD', flag: '🇨🇷' }
+        ];
+
+        async function runTest() {
+            const resultsDiv = document.getElementById('results');
+            const testBtn = document.getElementById('testBtn');
+
+            testBtn.disabled = true;
+            resultsDiv.innerHTML = '<div class="loading">🔄 Ejecutando tests...</div>';
+
+            // Get session info
+            const sapAuth = localStorage.getItem('sapAuth');
+            if (!sapAuth) {
+                resultsDiv.innerHTML = '<div class="database-result error"><strong>❌ Error:</strong> No hay sesión SAP activa. Por favor inicie sesión primero.</div>';
+                testBtn.disabled = false;
+                return;
+            }
+
+            const authData = JSON.parse(sapAuth);
+            let html = '<h2>📊 Resultados del Test</h2>';
+
+            // Test each database
+            for (const db of databases) {
+                const session = authData.sessions[db.db];
+
+                if (!session || !session.success) {
+                    html += `
+                        <div class="database-result error">
+                            <h3>${db.flag} ${db.name} (${db.db})</h3>
+                            <span class="status error">NO CONECTADO</span>
+                            <p>No hay sesión activa para esta base de datos.</p>
+                        </div>
+                    `;
+                    continue;
+                }
+
+                try {
+                    const response = await fetch('/api/sap/test-unit-fields', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            sessionId: session.sessionId,
+                            companyDB: db.db
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        html += `
+                            <div class="database-result success">
+                                <h3>${db.flag} ${db.name} (${db.db})</h3>
+                                <span class="status success">✓ EXITOSO</span>
+
+                                <div class="unit-fields">
+                                    <h4>📦 Campos de Unidad Encontrados:</h4>
+                                    ${Object.keys(result.unitFields).length > 0
+                                        ? `<pre>${JSON.stringify(result.unitFields, null, 2)}</pre>`
+                                        : '<p style="color: #dc3545;">❌ No se encontraron campos de unidad estándar</p>'
+                                    }
+                                    <p><strong>Recomendación:</strong> ${result.recommendation}</p>
+                                </div>
+
+                                <div class="field-list">
+                                    <h4>📋 Artículo de Prueba:</h4>
+                                    <p><strong>Código:</strong> ${result.itemCode}</p>
+                                    <p><strong>Nombre:</strong> ${result.itemName}</p>
+                                    <p><strong>Total de campos disponibles:</strong> ${result.allFieldNames.length}</p>
+                                    <details>
+                                        <summary>Ver todos los campos (${result.allFieldNames.length})</summary>
+                                        <pre>${JSON.stringify(result.allFieldNames, null, 2)}</pre>
+                                    </details>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="database-result error">
+                                <h3>${db.flag} ${db.name} (${db.db})</h3>
+                                <span class="status error">✗ ERROR</span>
+                                <p><strong>Error:</strong> ${result.error}</p>
+                                <pre>${JSON.stringify(result, null, 2)}</pre>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    html += `
+                        <div class="database-result error">
+                            <h3>${db.flag} ${db.name} (${db.db})</h3>
+                            <span class="status error">✗ ERROR</span>
+                            <p><strong>Error de conexión:</strong> ${error.message}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            resultsDiv.innerHTML = html;
+            testBtn.disabled = false;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Auto-run on page load if session exists
+        window.addEventListener('DOMContentLoaded', () => {
+            const sapAuth = localStorage.getItem('sapAuth');
+            if (!sapAuth) {
+                document.getElementById('results').innerHTML = `
+                    <div class="database-result error">
+                        <strong>⚠️ Advertencia:</strong> No hay sesión SAP activa.
+                        <br><br>
+                        Por favor, <a href="/login">inicie sesión</a> primero.
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -126,3 +126,17 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# SSL Certificates
+docker/ssl/*.pem
+docker/ssl/*.key
+docker/ssl/*.crt
+*.pem
+*.key
+*.crt
+
+# Sensitive files
+**/credentials*.json
+**/secrets*.json
+*.p12
+*.pfx

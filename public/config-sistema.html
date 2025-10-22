@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración del Sistema - SAP Multi-Regional</title>
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png">
+    <style>
+        :root {
+            --sap-blue: #0070E0;
+            --sap-light-blue: #E6F3FF;
+            --sap-dark-blue: #003B6B;
+            --sap-gray: #F7F7F7;
+            --sap-border: #D9D9D9;
+            --sap-text: #32363A;
+            --sap-success: #107E3E;
+            --sap-error: #E74C3C;
+            --sap-warning: #F39C12;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: '72', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--sap-gray);
+            color: var(--sap-text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 100%);
+            color: white;
+            padding: 20px 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 400;
+        }
+
+        .header-actions {
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-primary {
+            background: var(--sap-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--sap-dark-blue);
+        }
+
+        .btn-success {
+            background: var(--sap-success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        .card h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--sap-dark-blue);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: auto;
+        }
+
+        .category-sap {
+            background: var(--sap-light-blue);
+            color: var(--sap-blue);
+        }
+
+        .category-general {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .config-item {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid var(--sap-border);
+        }
+
+        .config-item:last-child {
+            border-bottom: none;
+        }
+
+        .config-label {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--sap-text);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-description {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+
+        .config-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--sap-border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .config-input:focus {
+            outline: none;
+            border-color: var(--sap-blue);
+        }
+
+        .config-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 11px;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--sap-text);
+        }
+
+        .spinner {
+            border: 3px solid var(--sap-border);
+            border-top: 3px solid var(--sap-blue);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .save-section {
+            position: sticky;
+            bottom: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
+            text-align: right;
+        }
+
+        .changed-badge {
+            background: var(--sap-warning);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .page-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .page-checkbox:hover {
+            background: #e9ecef;
+        }
+
+        .page-checkbox input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .page-checkbox label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            margin: 0;
+            flex: 1;
+        }
+
+        .page-icon {
+            min-width: 20px;
+            text-align: center;
+            color: var(--sap-blue);
+        }
+
+        /* Drag & Drop Page Ordering Styles */
+        .page-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: white;
+            border: 2px solid var(--sap-border);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: move;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .page-item:hover {
+            background: var(--sap-light-blue);
+            border-color: var(--sap-blue);
+            transform: translateX(5px);
+        }
+
+        .page-item.dragging {
+            opacity: 0.5;
+            background: #f0f0f0;
+            border-style: dashed;
+        }
+
+        .page-item.drag-over {
+            border-top: 3px solid var(--sap-blue);
+            margin-top: 20px;
+        }
+
+        .drag-handle {
+            font-size: 20px;
+            color: #999;
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .page-order-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 35px;
+            height: 35px;
+            background: var(--sap-blue);
+            color: white;
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .page-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-name {
+            font-weight: 600;
+            color: var(--sap-dark-blue);
+        }
+
+        .page-path {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .order-list-container {
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>⚙️ Configuración del Sistema</h1>
+        <div class="header-actions">
+            <a href="/dashboard" class="btn btn-secondary">← Volver al Dashboard</a>
+        </div>
+    </header>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Alert -->
+        <div id="alert" class="alert"></div>
+
+        <!-- Loading -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Cargando configuración...</p>
+        </div>
+
+        <!-- SAP Configuration -->
+        <div id="sap-config" class="card" style="display: none;">
+            <h2>
+                🔌 Configuración de SAP Service Layer
+                <span class="category-badge category-sap">SAP</span>
+            </h2>
+
+            <div class="config-item">
+                <div class="config-label">
+                    Service Layer URL
+                    <span class="changed-badge" id="badge-sap_endpoint" style="display: none;">MODIFICADO</span>
+                </div>
+                <div class="config-description">
+                    URL completa del SAP Service Layer (incluir puerto y trailing slash). Ejemplo: https://servidor:50000/
+                </div>
+                <input
+                    type="text"
+                    class="config-input"
+                    id="sap_endpoint"
+                    data-original=""
+                    placeholder="https://sap-stiacmzdr-sl.skyinone.net:50000/"
+                >
+                <div class="config-meta">
+                    <span>Última actualización: <span id="meta-sap_endpoint"></span></span>
+                    <span>Por: <span id="by-sap_endpoint"></span></span>
+                </div>
+            </div>
+
+            <div class="config-item">
+                <div class="config-label">
+                    Timeout (ms)
+                    <span class="changed-badge" id="badge-sap_timeout" style="display: none;">MODIFICADO</span>
+                </div>
+                <div class="config-description">
+                    Tiempo máximo de espera para peticiones SAP en milisegundos
+                </div>
+                <input
+                    type="number"
+                    class="config-input"
+                    id="sap_timeout"
+                    data-original=""
+                    placeholder="10000"
+                    min="1000"
+                    max="60000"
+                >
+                <div class="config-meta">
+                    <span>Última actualización: <span id="meta-sap_timeout"></span></span>
+                    <span>Por: <span id="by-sap_timeout"></span></span>
+                </div>
+            </div>
+
+            <div class="config-item">
+                <div class="config-label">
+                    Número de Reintentos
+                    <span class="changed-badge" id="badge-sap_retries" style="display: none;">MODIFICADO</span>
+                </div>
+                <div class="config-description">
+                    Número de reintentos para peticiones SAP fallidas
+                </div>
+                <input
+                    type="number"
+                    class="config-input"
+                    id="sap_retries"
+                    data-original=""
+                    placeholder="3"
+                    min="0"
+                    max="10"
+                >
+                <div class="config-meta">
+                    <span>Última actualización: <span id="meta-sap_retries"></span></span>
+                    <span>Por: <span id="by-sap_retries"></span></span>
+                </div>
+            </div>
+
+            <div class="config-item">
+                <div class="config-label">
+                    Verificar SSL
+                    <span class="changed-badge" id="badge-sap_verify_ssl" style="display: none;">MODIFICADO</span>
+                </div>
+                <div class="config-description">
+                    Verificar certificados SSL en peticiones SAP (true/false)
+                </div>
+                <select class="config-input" id="sap_verify_ssl" data-original="">
+                    <option value="true">Sí (Verificar certificados)</option>
+                    <option value="false">No (Ignorar certificados)</option>
+                </select>
+                <div class="config-meta">
+                    <span>Última actualización: <span id="meta-sap_verify_ssl"></span></span>
+                    <span>Por: <span id="by-sap_verify_ssl"></span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- General Configuration -->
+        <div id="general-config" class="card" style="display: none;">
+            <h2>
+                📱 Configuración General
+                <span class="category-badge category-general">GENERAL</span>
+            </h2>
+
+            <div class="config-item">
+                <div class="config-label">
+                    Nombre de la Aplicación
+                    <span class="changed-badge" id="badge-app_display_name" style="display: none;">MODIFICADO</span>
+                </div>
+                <div class="config-description">
+                    Nombre visible de la aplicación en el header y páginas
+                </div>
+                <input
+                    type="text"
+                    class="config-input"
+                    id="app_display_name"
+                    data-original=""
+                    placeholder="SAP Multi-Regional"
+                >
+                <div class="config-meta">
+                    <span>Última actualización: <span id="meta-app_display_name"></span></span>
+                    <span>Por: <span id="by-app_display_name"></span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groups & Pages Management -->
+        <div id="groups-config" class="card" style="display: none;">
+            <h2>
+                👥 Gestión de Grupos y Páginas
+                <span class="category-badge category-general">GRUPOS</span>
+            </h2>
+
+            <div class="config-description" style="margin-bottom: 20px;">
+                Crea grupos para organizar usuarios y asigna qué páginas puede ver cada grupo. Los usuarios heredan las páginas de sus grupos.
+            </div>
+
+            <!-- Create New Group Section -->
+            <div class="config-item" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <div class="config-label" style="font-size: 16px; color: var(--sap-dark-blue); margin-bottom: 15px;">
+                    ➕ Crear Nuevo Grupo
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px;">
+                            Nombre del Grupo *
+                        </label>
+                        <input
+                            type="text"
+                            class="config-input"
+                            id="new-group-name"
+                            placeholder="ej: Repuestos, Ventas, Finanzas"
+                            style="margin: 0;"
+                        >
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px;">
+                            Base de Datos SAP
+                        </label>
+                        <input
+                            type="text"
+                            class="config-input"
+                            id="new-group-companydb"
+                            placeholder="* (todas) o código específico"
+                            value="*"
+                            style="margin: 0;"
+                        >
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px;">
+                        Descripción *
+                    </label>
+                    <input
+                        type="text"
+                        class="config-input"
+                        id="new-group-description"
+                        placeholder="ej: Grupo para usuarios del departamento de repuestos"
+                        style="margin: 0;"
+                    >
+                </div>
+
+                <button class="btn btn-primary" onclick="createNewGroup()" style="width: 100%;">
+                    ➕ Crear Grupo
+                </button>
+            </div>
+
+            <div class="config-item">
+                <div class="config-label">Seleccionar Grupo</div>
+                <select class="config-input" id="selected-group" onchange="loadGroupPages()">
+                    <option value="">Cargando grupos...</option>
+                </select>
+            </div>
+
+            <div class="config-item" id="pages-checkboxes" style="display: none;">
+                <div class="config-label">Páginas Disponibles</div>
+                <div class="config-description">Selecciona las páginas que este grupo puede ver</div>
+                <div id="pages-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px;">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+
+            <div id="save-group-section" style="display: none; margin-top: 20px; text-align: right;">
+                <button class="btn btn-success" onclick="saveGroupPages()">
+                    💾 Guardar Páginas del Grupo
+                </button>
+            </div>
+        </div>
+
+        <!-- Page Ordering Management -->
+        <div id="page-ordering-config" class="card" style="display: none;">
+            <h2>
+                🔢 Ordenar Páginas del Dashboard
+                <span class="category-badge category-general">ORDENAMIENTO</span>
+            </h2>
+
+            <div class="config-description" style="margin-bottom: 20px;">
+                Arrastra y suelta las páginas para definir el orden en que aparecen en el dashboard y menús.
+            </div>
+
+            <!-- Alert específica para ordenamiento -->
+            <div id="order-alert" class="alert" style="display: none; margin-bottom: 20px;"></div>
+
+            <div class="order-list-container" id="sortable-pages-list">
+                <div style="text-align: center; padding: 40px; color: #6c757d;">
+                    <div class="spinner"></div>
+                    <p>Cargando páginas...</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn btn-success" onclick="savePageOrder()" id="save-order-btn">
+                    💾 Guardar Orden
+                </button>
+            </div>
+        </div>
+
+        <!-- Save Section -->
+        <div class="save-section" id="save-section" style="display: none;">
+            <button class="btn btn-success" onclick="saveChanges()">
+                💾 Guardar Cambios
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let configs = {};
+        let hasChanges = false;
+
+        // Check authentication
+        function checkAuth() {
+            const authData = localStorage.getItem('sapAuth');
+            if (!authData) {
+                window.location.href = '/login';
+                return null;
+            }
+
+            try {
+                const auth = JSON.parse(authData);
+
+                // Only allow stifmolina2
+                if (auth.username !== 'stifmolina2') {
+                    showAlert('No tienes permisos para acceder a esta página', 'error');
+                    setTimeout(() => window.location.href = '/dashboard', 2000);
+                    return null;
+                }
+
+                return auth;
+            } catch (error) {
+                window.location.href = '/login';
+                return null;
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type = 'success') {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+
+            setTimeout(() => {
+                alert.className = 'alert';
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                const response = await fetch('/api/admin/config', {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Error al cargar configuración');
+                }
+
+                configs = {};
+                data.configs.forEach(config => {
+                    configs[config.key] = config;
+
+                    const input = document.getElementById(config.key);
+                    if (input) {
+                        input.value = config.value;
+                        input.dataset.original = config.value;
+
+                        // Add change listener
+                        input.addEventListener('input', () => checkForChanges());
+
+                        // Update metadata
+                        const metaEl = document.getElementById(`meta-${config.key}`);
+                        if (metaEl && config.updatedAt) {
+                            metaEl.textContent = new Date(config.updatedAt).toLocaleString();
+                        }
+
+                        const byEl = document.getElementById(`by-${config.key}`);
+                        if (byEl && config.updatedBy) {
+                            byEl.textContent = config.updatedBy;
+                        }
+                    }
+                });
+
+                // Show cards
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('sap-config').style.display = 'block';
+                document.getElementById('general-config').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading config:', error);
+                showAlert('Error al cargar configuración: ' + error.message, 'error');
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Check for changes
+        function checkForChanges() {
+            hasChanges = false;
+
+            Object.keys(configs).forEach(key => {
+                const input = document.getElementById(key);
+                if (input) {
+                    const originalValue = input.dataset.original;
+                    const currentValue = input.value;
+                    const badge = document.getElementById(`badge-${key}`);
+
+                    if (originalValue !== currentValue) {
+                        hasChanges = true;
+                        if (badge) badge.style.display = 'inline-block';
+                    } else {
+                        if (badge) badge.style.display = 'none';
+                    }
+                }
+            });
+
+            document.getElementById('save-section').style.display = hasChanges ? 'block' : 'none';
+        }
+
+        // Save changes
+        async function saveChanges() {
+            const changedConfigs = [];
+
+            Object.keys(configs).forEach(key => {
+                const input = document.getElementById(key);
+                if (input && input.dataset.original !== input.value) {
+                    changedConfigs.push({
+                        key: key,
+                        value: input.value
+                    });
+                }
+            });
+
+            if (changedConfigs.length === 0) {
+                showAlert('No hay cambios para guardar', 'error');
+                return;
+            }
+
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                // Save each configuration
+                for (const config of changedConfigs) {
+                    const response = await fetch(`/api/admin/config/${config.key}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-sap-username': auth.username
+                        },
+                        body: JSON.stringify({ value: config.value })
+                    });
+
+                    const data = await response.json();
+                    if (!data.success) {
+                        throw new Error(data.error || `Error al guardar ${config.key}`);
+                    }
+                }
+
+                showAlert(`✓ ${changedConfigs.length} configuración(es) guardada(s) correctamente`, 'success');
+
+                // Reload configuration
+                await loadConfig();
+                hasChanges = false;
+                document.getElementById('save-section').style.display = 'none';
+
+            } catch (error) {
+                console.error('Error saving config:', error);
+                showAlert('Error al guardar configuración: ' + error.message, 'error');
+            }
+        }
+
+        // =====================================================
+        // GESTIÓN DE GRUPOS Y PÁGINAS
+        // =====================================================
+
+        let allRoles = [];
+        let allPages = [];
+        let currentRolePages = [];
+
+        // Cargar grupos/roles
+        async function loadGroups() {
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                const response = await fetch('/api/admin/roles', {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    allRoles = data.roles;
+                    const select = document.getElementById('selected-group');
+                    select.innerHTML = '<option value="">Seleccionar grupo...</option>';
+
+                    allRoles.forEach(role => {
+                        select.innerHTML += `<option value="${role.id}">${role.name} - ${role.description}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading groups:', error);
+                showAlert('Error al cargar grupos', 'error');
+            }
+        }
+
+        // Cargar todas las páginas disponibles
+        async function loadAllPages() {
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                const response = await fetch('/api/admin/pages', {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    allPages = data.pages;
+                }
+            } catch (error) {
+                console.error('Error loading pages:', error);
+            }
+        }
+
+        // Cargar páginas de un grupo específico
+        async function loadGroupPages() {
+            const roleId = document.getElementById('selected-group').value;
+
+            if (!roleId) {
+                document.getElementById('pages-checkboxes').style.display = 'none';
+                document.getElementById('save-group-section').style.display = 'none';
+                return;
+            }
+
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                // Obtener páginas del rol
+                const response = await fetch(`/api/admin/roles/${roleId}/pages`, {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    currentRolePages = data.pages.map(p => p.id);
+                    displayPagesCheckboxes();
+                    document.getElementById('pages-checkboxes').style.display = 'block';
+                    document.getElementById('save-group-section').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading group pages:', error);
+                showAlert('Error al cargar páginas del grupo', 'error');
+            }
+        }
+
+        // Mostrar checkboxes de páginas
+        function displayPagesCheckboxes() {
+            const container = document.getElementById('pages-list');
+            container.innerHTML = '';
+
+            allPages.forEach(page => {
+                const isChecked = currentRolePages.includes(page.id);
+                const checkboxId = `page-${page.id}`;
+
+                container.innerHTML += `
+                    <div class="page-checkbox">
+                        <input
+                            type="checkbox"
+                            id="${checkboxId}"
+                            value="${page.id}"
+                            ${isChecked ? 'checked' : ''}
+                        >
+                        <label for="${checkboxId}">
+                            <span class="page-icon"><i class="${page.icon || 'fas fa-file'}"></i></span>
+                            <span>${page.name}</span>
+                        </label>
+                    </div>
+                `;
+            });
+        }
+
+        // Guardar páginas del grupo
+        async function saveGroupPages() {
+            const roleId = document.getElementById('selected-group').value;
+
+            if (!roleId) {
+                showAlert('Selecciona un grupo primero', 'error');
+                return;
+            }
+
+            // Obtener IDs de páginas seleccionadas
+            const selectedPages = [];
+            allPages.forEach(page => {
+                const checkbox = document.getElementById(`page-${page.id}`);
+                if (checkbox && checkbox.checked) {
+                    selectedPages.push(page.id);
+                }
+            });
+
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                const response = await fetch(`/api/admin/roles/${roleId}/pages`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-sap-username': auth.username
+                    },
+                    body: JSON.stringify({ pageIds: selectedPages })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(`✓ Páginas actualizadas para el grupo (${selectedPages.length} páginas asignadas)`, 'success');
+                    await loadGroupPages(); // Recargar para actualizar
+                } else {
+                    throw new Error(data.error || 'Error al guardar páginas');
+                }
+            } catch (error) {
+                console.error('Error saving group pages:', error);
+                showAlert('Error al guardar páginas: ' + error.message, 'error');
+            }
+        }
+
+        // Crear nuevo grupo
+        async function createNewGroup() {
+            const name = document.getElementById('new-group-name').value.trim();
+            const description = document.getElementById('new-group-description').value.trim();
+            const companyDb = document.getElementById('new-group-companydb').value.trim() || '*';
+
+            // Validar campos requeridos
+            if (!name || !description) {
+                showAlert('Por favor completa el nombre y la descripción del grupo', 'error');
+                return;
+            }
+
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                const response = await fetch('/api/admin/roles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-sap-username': auth.username
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        description: description,
+                        companyDb: companyDb
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(`✓ Grupo "${name}" creado correctamente`, 'success');
+
+                    // Limpiar formulario
+                    document.getElementById('new-group-name').value = '';
+                    document.getElementById('new-group-description').value = '';
+                    document.getElementById('new-group-companydb').value = '*';
+
+                    // Recargar lista de grupos
+                    await loadGroups();
+
+                    // Seleccionar el nuevo grupo automáticamente
+                    if (data.role && data.role.id) {
+                        document.getElementById('selected-group').value = data.role.id;
+                        await loadGroupPages();
+                    }
+                } else {
+                    throw new Error(data.error || 'Error al crear grupo');
+                }
+            } catch (error) {
+                console.error('Error creating group:', error);
+                showAlert('Error al crear grupo: ' + error.message, 'error');
+            }
+        }
+
+        // =====================================================
+        // GESTIÓN DE ORDENAMIENTO DE PÁGINAS
+        // =====================================================
+
+        let sortedPages = [];
+        let draggedElement = null;
+
+        // Cargar páginas para ordenamiento
+        async function loadPagesForOrdering() {
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                const response = await fetch('/api/admin/pages', {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    sortedPages = data.pages.sort((a, b) => a.display_order - b.display_order);
+                    renderSortablePages();
+                }
+            } catch (error) {
+                console.error('Error loading pages for ordering:', error);
+                showAlert('Error al cargar páginas', 'error');
+            }
+        }
+
+        // Renderizar lista de páginas arrastrables
+        function renderSortablePages() {
+            const container = document.getElementById('sortable-pages-list');
+            container.innerHTML = '';
+
+            sortedPages.forEach((page, index) => {
+                const pageElement = document.createElement('div');
+                pageElement.className = 'page-item';
+                pageElement.draggable = true;
+                pageElement.dataset.pageId = page.id;
+                pageElement.dataset.index = index;
+
+                pageElement.innerHTML = `
+                    <span class="drag-handle">⋮⋮</span>
+                    <div class="page-order-number">${index + 1}</div>
+                    <div class="page-info">
+                        <span class="page-icon"><i class="${page.icon || 'fas fa-file'}"></i></span>
+                        <div style="flex: 1;">
+                            <div class="page-name">${page.name}</div>
+                            <div class="page-path">${page.path}</div>
+                        </div>
+                    </div>
+                `;
+
+                // Event listeners para drag & drop
+                pageElement.addEventListener('dragstart', handleDragStart);
+                pageElement.addEventListener('dragover', handleDragOver);
+                pageElement.addEventListener('drop', handleDrop);
+                pageElement.addEventListener('dragend', handleDragEnd);
+                pageElement.addEventListener('dragenter', handleDragEnter);
+                pageElement.addEventListener('dragleave', handleDragLeave);
+
+                container.appendChild(pageElement);
+            });
+        }
+
+        // Manejadores de eventos drag & drop
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            if (this !== draggedElement) {
+                this.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedElement !== this) {
+                // Obtener índices
+                const draggedIndex = parseInt(draggedElement.dataset.index);
+                const targetIndex = parseInt(this.dataset.index);
+
+                // Reordenar array
+                const draggedPage = sortedPages[draggedIndex];
+                sortedPages.splice(draggedIndex, 1);
+                sortedPages.splice(targetIndex, 0, draggedPage);
+
+                // Re-renderizar
+                renderSortablePages();
+            }
+
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+
+            // Limpiar clases drag-over de todos los elementos
+            document.querySelectorAll('.page-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+        }
+
+        // Mostrar alerta específica para ordenamiento
+        function showOrderAlert(message, type = 'success') {
+            const alert = document.getElementById('order-alert');
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            alert.style.display = 'block';
+
+            // Auto-ocultar después de 8 segundos
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 8000);
+        }
+
+        // Guardar orden de páginas
+        async function savePageOrder() {
+            const btn = document.getElementById('save-order-btn');
+            const originalText = btn.textContent;
+
+            try {
+                const auth = checkAuth();
+                if (!auth) return;
+
+                // Cambiar texto del botón para mostrar progreso
+                btn.textContent = '⏳ Guardando...';
+                btn.disabled = true;
+
+                // Construir array con nuevo orden
+                const pages = sortedPages.map((page, index) => ({
+                    id: page.id,
+                    display_order: (index + 1) * 10  // 10, 20, 30, etc.
+                }));
+
+                const response = await fetch('/api/admin/pages/reorder', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-sap-username': auth.username
+                    },
+                    body: JSON.stringify({ pages })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Mostrar mensaje de éxito en la alerta local
+                    showOrderAlert('✓ Orden de páginas guardado correctamente. Los cambios se verán reflejados en el dashboard.', 'success');
+
+                    // Cambiar temporalmente el botón a éxito
+                    btn.textContent = '✓ Guardado';
+                    btn.style.background = '#107E3E';
+
+                    // Recargar para refrescar display_order desde la BD
+                    await loadPagesForOrdering();
+
+                    // Restaurar botón después de 2 segundos
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                        btn.disabled = false;
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Error al guardar orden');
+                }
+            } catch (error) {
+                console.error('Error saving page order:', error);
+                showOrderAlert('❌ Error al guardar orden: ' + error.message, 'error');
+
+                // Restaurar botón
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            const auth = checkAuth();
+            if (auth) {
+                await loadConfig();
+                await loadGroups();
+                await loadAllPages();
+                await loadPagesForOrdering();
+
+                // Mostrar las cards de configuración
+                document.getElementById('groups-config').style.display = 'block';
+                document.getElementById('page-ordering-config').style.display = 'block';
+            }
+        });
+    </script>
+    <!-- Inactivity Manager - Auto logout after 5 minutes of inactivity -->
+    <script src="/js/inactivityManager.js"></script>
+</body>
+</html>

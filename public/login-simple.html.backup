@@ -1,0 +1,350 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema ERP - Inicio de SesiÃ³n</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        :root {
+            --sap-blue: #0070E0;
+            --sap-dark-blue: #003B6B;
+            --sap-white: #FFFFFF;
+            --sap-text: #32363A;
+            --sap-success: #107E3E;
+            --sap-error: #E74C3C;
+            --bluesystem-accent: #0052CC;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: '72', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 50%, #E6F3FF 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--sap-text);
+            padding: 20px;
+        }
+
+        .login-container {
+            background: var(--sap-white);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .sap-logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .sap-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .login-form {
+            padding: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .sap-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sap-text);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sap-input {
+            width: 100%;
+            border: 1px solid #D9D9D9;
+            border-radius: 4px;
+            padding: 12px 16px;
+            font-size: 14px;
+            background: var(--sap-white);
+            transition: all 0.2s ease;
+        }
+
+        .sap-input:focus {
+            outline: none;
+            border-color: var(--sap-blue);
+            box-shadow: 0 0 0 2px rgba(0, 112, 224, 0.2);
+        }
+
+        .sap-input.error {
+            border-color: var(--sap-error);
+            box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+        }
+
+        .login-button {
+            width: 100%;
+            background: var(--sap-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .login-button:hover {
+            background: var(--sap-dark-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 112, 224, 0.3);
+        }
+
+        .login-button:disabled {
+            background: #6A6D70;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #D4F5D4;
+            border: 1px solid var(--sap-success);
+            color: var(--sap-success);
+        }
+
+        .alert.error {
+            background: #FFE6E6;
+            border: 1px solid var(--sap-error);
+            color: var(--sap-error);
+        }
+
+        .credentials-panel {
+            background: #E6F3FF;
+            border: 1px solid #D9D9D9;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .credentials-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sap-blue);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .credentials-info {
+            font-size: 14px;
+            color: var(--sap-text);
+            line-height: 1.4;
+        }
+
+        .credential-item {
+            margin: 4px 0;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+        }
+
+        .bluesystem-footer {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Header -->
+        <div class="login-header">
+            <div class="sap-logo">STIA Comercializadora</div>
+            <div class="sap-subtitle">Sistema de Consulta Multi-CompaÃ±Ã­a</div>
+        </div>
+
+        <!-- Login Form -->
+        <div class="login-form">
+
+            <!-- Alert Messages -->
+            <div id="alert" class="alert"></div>
+
+            <!-- Form -->
+            <form id="loginForm" method="post" action="#">
+                <div class="form-group">
+                    <label class="sap-label">Usuario</label>
+                    <input type="text" class="sap-input" id="username" name="username" value="stifmolina2" placeholder="Ingrese su usuario SAP" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="sap-label">ContraseÃ±a</label>
+                    <input type="password" class="sap-input" id="password" name="password" value="FmDiosMio1" placeholder="Ingrese su contraseÃ±a" required>
+                </div>
+
+                <button type="submit" class="login-button" id="loginBtn">
+                    Iniciar SesiÃ³n
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div>Â© 2025 Sistema desarrollado por</div>
+        <div class="bluesystem-footer">BlueSystemIO</div>
+    </div>
+
+    <script>
+        console.log('=== Login page script loaded ===');
+
+        // Show alert message
+        function showAlert(message, type = 'error') {
+            console.log('showAlert called:', message, type);
+            const alert = document.getElementById('alert');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('=== FORM SUBMITTED ===');
+            console.log('Form submitted - preventDefault called');
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+
+            console.log('Username:', username);
+            console.log('Password length:', password.length);
+
+            // Reset error states
+            usernameInput.classList.remove('error');
+            passwordInput.classList.remove('error');
+
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Iniciando sesiÃ³n...';
+
+            try {
+                // Real SAP authentication
+                console.log('Attempting SAP login for user:', username);
+                console.log('Fetching /api/sap/login-all...');
+
+                const apiUrl = window.location.origin + '/api/sap/login-all';
+                console.log('Using API URL:', apiUrl);
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+
+                const result = await response.json();
+                console.log('SAP login result:', result);
+
+                if (result.success && result.successCount > 0) {
+                    // Store authentication data
+                    localStorage.setItem('sapAuth', JSON.stringify({
+                        username: username,
+                        sessions: result.results,
+                        loginTime: new Date().toISOString(),
+                        successCount: result.successCount,
+                        totalDatabases: result.totalDatabases
+                    }));
+
+                    showAlert(
+                        `Â¡Acceso autorizado! Conectado a ${result.successCount} de ${result.totalDatabases} bases de datos. Redirigiendo...`,
+                        'success'
+                    );
+
+                    console.log('Login successful! Redirecting to dashboard...');
+
+                    // Redirect after showing success message
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2000);
+                } else {
+                    // Authentication failed
+                    console.error('Authentication failed:', result);
+                    showAlert('Credenciales incorrectas o no se pudo conectar a las bases de datos SAP.');
+                    usernameInput.classList.add('error');
+                    passwordInput.classList.add('error');
+
+                    // Reset button
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Iniciar SesiÃ³n';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Error de conexiÃ³n: ' + error.message);
+
+                // Reset button
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Iniciar SesiÃ³n';
+            }
+        });
+
+        // Auto-focus on username field
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM Content Loaded');
+            document.getElementById('username').focus();
+        });
+
+        console.log('=== Simple login page script ready - v3.0 - Enhanced debugging ===');
+    </script>
+</body>
+</html>
+
+

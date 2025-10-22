@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Loading... - Inicio de Sesión</title>
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/app-theme.css" rel="stylesheet">
+    <style>
+        /* Page-specific styles only - variables now in app-theme.css */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: '72', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 50%, var(--sap-light-blue) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--sap-text);
+        }
+
+        /* Splash Screen */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--sap-white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .splash-logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--sap-blue);
+            margin-bottom: 20px;
+        }
+
+        .splash-text {
+            font-size: 16px;
+            color: var(--sap-medium-gray);
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 250px;
+            height: 4px;
+            background: var(--sap-light-blue);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--sap-blue);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .powered-by {
+            font-size: 14px;
+            color: var(--sap-medium-gray);
+            margin-top: 20px;
+        }
+
+        .bluesystem-branding {
+            color: var(--bluesystem-accent);
+            font-weight: 600;
+        }
+
+        /* Login Container */
+        .login-container {
+            background: var(--sap-white);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            display: block;
+        }
+
+        .login-container.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Force show login if splash is hidden */
+        body:not(.splash-active) .login-container {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Header */
+        .login-header {
+            background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .sap-logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .sap-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Login Form */
+        .login-form {
+            padding: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .sap-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sap-text);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sap-input {
+            width: 100%;
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            padding: 12px 16px;
+            font-size: 14px;
+            background: var(--sap-white);
+            transition: all 0.2s ease;
+        }
+
+        .sap-input:focus {
+            outline: none;
+            border-color: var(--sap-blue);
+            box-shadow: 0 0 0 2px rgba(0, 112, 224, 0.2);
+        }
+
+        .sap-input.error {
+            border-color: var(--sap-error);
+            box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+        }
+
+        /* Credentials Panel */
+        .credentials-panel {
+            background: var(--sap-light-blue);
+            border: 1px solid var(--sap-border);
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .credentials-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--sap-blue);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .credentials-info {
+            font-size: 14px;
+            color: var(--sap-text);
+            line-height: 1.4;
+        }
+
+        .credential-item {
+            margin: 4px 0;
+        }
+
+        /* Login Button */
+        .login-button {
+            width: 100%;
+            background: var(--sap-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .login-button:hover {
+            background: var(--sap-dark-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 112, 224, 0.3);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        .login-button:disabled {
+            background: var(--sap-medium-gray);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #D4F5D4;
+            border: 1px solid var(--sap-success);
+            color: var(--sap-success);
+        }
+
+        .alert.error {
+            background: #FFE6E6;
+            border: 1px solid var(--sap-error);
+            color: var(--sap-error);
+        }
+
+        /* System Status */
+        .system-status {
+            background: var(--sap-gray);
+            border-top: 1px solid var(--sap-border);
+            padding: 16px 32px;
+            font-size: 12px;
+            color: var(--sap-medium-gray);
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-online {
+            background: var(--sap-success);
+            animation: pulse 2s infinite;
+        }
+
+        .status-offline {
+            background: var(--sap-error);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Footer */
+        .login-footer {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+        }
+
+        .bluesystem-footer {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 20px;
+                max-width: none;
+            }
+
+            .login-form {
+                padding: 24px;
+            }
+
+            .login-header {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo" id="splashLogo">Loading...</div>
+        <div class="splash-text">Iniciando módulo de consulta de artículos...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="powered-by">
+            Desarrollado por <span class="bluesystem-branding">BlueSystemIO</span>
+        </div>
+    </div>
+
+    <!-- Login Container -->
+    <div class="login-container" id="loginContainer">
+        <!-- Header -->
+        <div class="login-header">
+            <div class="sap-logo" id="sapLogo">Loading...</div>
+            <div class="sap-subtitle">Sistema de Consulta Multi-Compañía</div>
+        </div>
+
+        <!-- Login Form -->
+        <div class="login-form">
+            <!-- Access Panel -->
+            <div class="credentials-panel">
+                <div class="credentials-title">Sistema de Consulta SAP</div>
+                <div class="credentials-info">
+                    <div class="credential-item">Ingrese sus credenciales SAP para acceder al sistema</div>
+                </div>
+            </div>
+
+            <!-- Alert Messages -->
+            <div id="alert" class="alert"></div>
+
+            <!-- Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Usuario</label>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="Ingrese su usuario SAP" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Ingrese su contraseña" required>
+                </div>
+
+                <button type="submit" class="login-button" id="loginBtn">
+                    Iniciar Sesión
+                </button>
+            </form>
+        </div>
+
+        <!-- System Status -->
+        <div class="system-status">
+            <div class="status-item">
+                <span><span class="status-indicator status-online"></span>Estado del Sistema</span>
+                <span>Operativo</span>
+            </div>
+            <div class="status-item">
+                <span><span class="status-indicator status-online"></span>Conectividad SAP</span>
+                <span id="sapStatus">Verificando...</span>
+            </div>
+            <div class="status-item">
+                <span>Versión del Sistema</span>
+                <span>1.0.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="login-footer">
+        <div>© 2025 Sistema desarrollado por</div>
+        <div class="bluesystem-footer">BlueSystemIO</div>
+    </div>
+
+    <!-- Emergency skip button -->
+    <div style="position: fixed; top: 10px; right: 10px; z-index: 10001;">
+        <button onclick="forceShowLogin()" style="
+            background: rgba(255,255,255,0.8); 
+            border: 1px solid #ccc; 
+            padding: 5px 10px; 
+            border-radius: 3px; 
+            font-size: 10px; 
+            cursor: pointer;
+            color: #666;
+        ">Skip Splash</button>
+    </div>
+
+    <script>
+        // Force show login (emergency function)
+        function forceShowLogin() {
+            const splash = document.getElementById('splashScreen');
+            const loginContainer = document.getElementById('loginContainer');
+            
+            if (splash) splash.classList.add('hidden');
+            document.body.classList.remove('splash-active');
+            if (loginContainer) loginContainer.classList.add('show');
+            
+            console.log('Emergency login activation');
+        }
+
+        // Show alert message
+        function showAlert(message, type = 'error') {
+            const alert = document.getElementById('alert');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Check SAP connectivity
+        async function checkSAPConnectivity() {
+            try {
+                const response = await fetch('/api/sap/test-connection', {
+                    timeout: 5000 // 5 second timeout
+                });
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('sapStatus');
+                if (data.success) {
+                    statusEl.textContent = `Conectado (${data.responseTime})`;
+                } else {
+                    statusEl.textContent = 'Desconectado';
+                }
+            } catch (error) {
+                console.warn('SAP connectivity check failed:', error);
+                const statusEl = document.getElementById('sapStatus');
+                if (statusEl) {
+                    statusEl.textContent = 'Verificando...';
+                }
+            }
+        }
+
+        // Splash screen animation
+        function showSplashScreen() {
+            const splash = document.getElementById('splashScreen');
+            const progressFill = document.getElementById('progressFill');
+            const loginContainer = document.getElementById('loginContainer');
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15 + 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    
+                    setTimeout(() => {
+                        if (splash) splash.classList.add('hidden');
+                        document.body.classList.remove('splash-active');
+                        setTimeout(() => {
+                            if (loginContainer) loginContainer.classList.add('show');
+                            // Check SAP connectivity but don't wait for it
+                            checkSAPConnectivity().catch(console.warn);
+                        }, 500);
+                    }, 500);
+                }
+                if (progressFill) progressFill.style.width = progress + '%';
+            }, 200);
+
+            // Failsafe: Always show login after maximum 4 seconds
+            setTimeout(() => {
+                if (!loginContainer.classList.contains('show')) {
+                    console.log('Failsafe: Showing login container');
+                    if (splash) splash.classList.add('hidden');
+                    document.body.classList.remove('splash-active');
+                    if (loginContainer) loginContainer.classList.add('show');
+                    checkSAPConnectivity().catch(console.warn);
+                }
+            }, 4000);
+        }
+
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+
+            // Reset error states
+            usernameInput.classList.remove('error');
+            passwordInput.classList.remove('error');
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Iniciando sesión...';
+            
+            try {
+                // Real SAP authentication
+                const response = await fetch('/api/sap/login-all', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success && result.successCount > 0) {
+                    // Store authentication data
+                    localStorage.setItem('sapAuth', JSON.stringify({
+                        username: username,
+                        sessions: result.results,
+                        loginTime: new Date().toISOString(),
+                        successCount: result.successCount,
+                        totalDatabases: result.totalDatabases
+                    }));
+                    
+                    showAlert(
+                        `¡Acceso autorizado! Conectado a ${result.successCount} de ${result.totalDatabases} bases de datos. Redirigiendo...`, 
+                        'success'
+                    );
+                    
+                    // Redirect after showing success message
+                    setTimeout(() => {
+                        window.location.href = '/articulos';
+                    }, 2000);
+                } else {
+                    // Authentication failed
+                    showAlert('Credenciales incorrectas o no se pudo conectar a las bases de datos SAP.');
+                    usernameInput.classList.add('error');
+                    passwordInput.classList.add('error');
+                    
+                    // Reset button
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Iniciar Sesión';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Error de conexión. Por favor, intente nuevamente.');
+                
+                // Reset button
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Iniciar Sesión';
+            }
+        });
+
+        // Load app configuration
+        async function loadAppConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                // Update app name in all locations
+                document.getElementById('pageTitle').textContent = `${config.appName} - Inicio de Sesión`;
+                document.getElementById('splashLogo').textContent = config.appName;
+                document.getElementById('sapLogo').textContent = config.appName;
+                
+                console.log('App configuration loaded:', config);
+            } catch (error) {
+                console.error('Error loading app configuration:', error);
+                // Fallback to default
+                const fallbackName = 'My Application';
+                document.getElementById('pageTitle').textContent = `${fallbackName} - Inicio de Sesión`;
+                document.getElementById('splashLogo').textContent = fallbackName;
+                document.getElementById('sapLogo').textContent = fallbackName;
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadAppConfig();
+            
+            // Add splash active class
+            document.body.classList.add('splash-active');
+            
+            // Show splash screen
+            showSplashScreen();
+            
+            // Auto-focus on username field after splash
+            setTimeout(() => {
+                const usernameField = document.getElementById('username');
+                if (usernameField) usernameField.focus();
+            }, 4500);
+        });
+    </script>
+</body>
+</html>

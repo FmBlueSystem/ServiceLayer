@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Loading... - Administración de Permisos</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/app-theme.css" rel="stylesheet">
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png">
+    <style>
+        .step-card {
+            border-left: 4px solid #0070E0;
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #003B6B 0%, #0070E0 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .step-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #FFF3CD;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #D4F5D4;
+            color: #107E3E;
+        }
+
+        .status-in-progress {
+            background: #CFE2FF;
+            color: #084298;
+        }
+
+        .users-table {
+            font-size: 14px;
+        }
+
+        .users-table th {
+            background: #F8F9FA;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .modal-body {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Principal -->
+    <header class="main-header">
+        <div class="header-left">
+            <h1 class="system-title" id="systemTitle">Loading...</h1>
+            <h2 class="page-title">Administración de Permisos</h2>
+        </div>
+        <div class="header-right">
+            <span class="user-badge" id="currentUser">
+                <i class="fas fa-user"></i>
+                <span id="username">Usuario</span>
+            </span>
+            <a href="/dashboard" class="logout-btn">
+                <i class="fas fa-arrow-left"></i>
+                Volver al Dashboard
+            </a>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Alertas -->
+        <div id="alertContainer"></div>
+
+        <!-- Guía de Implementación -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4><i class="fas fa-info-circle"></i> Guía de Implementación</h4>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">Sigue estos pasos en orden para configurar el sistema de permisos:</p>
+                <ol class="mb-0">
+                    <li><strong>Sincronizar Usuarios:</strong> Trae los usuarios desde SAP Costa Rica</li>
+                    <li><strong>Ver Usuarios:</strong> Verifica que los usuarios se sincronizaron correctamente</li>
+                    <li><strong>Asignar Roles:</strong> Asigna roles a cada usuario según sus responsabilidades</li>
+                    <li><strong>Verificar Permisos:</strong> Revisa los permisos de cada rol</li>
+                    <li><strong>Auditoría:</strong> Monitorea las acciones realizadas en el sistema</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Paso 1: Sincronizar Usuarios -->
+        <div class="card mb-4 step-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="step-number">1</div>
+                    <div>
+                        <h5 class="mb-1">Sincronizar Usuarios desde SAP</h5>
+                        <small class="text-muted">Trae la lista de usuarios desde SAP Costa Rica</small>
+                    </div>
+                </div>
+                <span class="step-status status-pending" id="step1Status">Pendiente</span>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Este proceso consulta la tabla OUSR de SAP Costa Rica y sincroniza los usuarios en PostgreSQL.</p>
+                <button class="btn btn-primary" onclick="syncUsers()" id="syncBtn">
+                    <i class="fas fa-sync"></i> Sincronizar Usuarios
+                </button>
+                <div id="syncResult" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Paso 2: Ver Usuarios -->
+        <div class="card mb-4 step-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="step-number">2</div>
+                    <div>
+                        <h5 class="mb-1">Ver Usuarios Sincronizados</h5>
+                        <small class="text-muted">Lista de usuarios disponibles en el sistema</small>
+                    </div>
+                </div>
+                <span class="step-status status-pending" id="step2Status">Pendiente</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <input type="text" class="form-control" id="searchUsers" placeholder="Buscar usuario...">
+                    </div>
+                    <button class="btn btn-primary" onclick="loadUsers()">
+                        <i class="fas fa-list"></i> Cargar Usuarios
+                    </button>
+                </div>
+                <div id="usersTableContainer"></div>
+            </div>
+        </div>
+
+        <!-- Paso 3: Asignar Roles -->
+        <div class="card mb-4 step-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="step-number">3</div>
+                    <div>
+                        <h5 class="mb-1">Asignar Roles a Usuarios</h5>
+                        <small class="text-muted">Define qué puede hacer cada usuario</small>
+                    </div>
+                </div>
+                <span class="step-status status-pending" id="step3Status">Pendiente</span>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">Selecciona un usuario de la tabla anterior y asigna un rol apropiado.</p>
+                <button class="btn btn-primary" onclick="openAssignRoleModal()">
+                    <i class="fas fa-user-shield"></i> Asignar Rol
+                </button>
+            </div>
+        </div>
+
+        <!-- Paso 4: Ver Roles y Permisos -->
+        <div class="card mb-4 step-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="step-number">4</div>
+                    <div>
+                        <h5 class="mb-1">Ver Roles y Permisos</h5>
+                        <small class="text-muted">Revisa qué permisos tiene cada rol</small>
+                    </div>
+                </div>
+                <span class="step-status status-pending" id="step4Status">Pendiente</span>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-primary" onclick="loadRoles()">
+                    <i class="fas fa-shield-alt"></i> Ver Roles Disponibles
+                </button>
+                <div id="rolesContainer" class="mt-3"></div>
+            </div>
+        </div>
+
+        <!-- Paso 5: Auditoría -->
+        <div class="card mb-4 step-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="step-number">5</div>
+                    <div>
+                        <h5 class="mb-1">Logs de Auditoría</h5>
+                        <small class="text-muted">Monitorea las acciones del sistema</small>
+                    </div>
+                </div>
+                <span class="step-status status-pending" id="step5Status">Pendiente</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Usuario</label>
+                        <input type="text" class="form-control" id="filterUsername" placeholder="Filtrar por usuario">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Recurso</label>
+                        <input type="text" class="form-control" id="filterResource" placeholder="Filtrar por recurso">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Límite</label>
+                        <select class="form-select" id="filterLimit">
+                            <option value="50">50</option>
+                            <option value="100" selected>100</option>
+                            <option value="200">200</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" onclick="loadAuditLogs()">
+                            <i class="fas fa-search"></i> Buscar Logs
+                        </button>
+                    </div>
+                </div>
+                <div id="auditLogsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Asignar Rol -->
+    <div class="modal fade" id="assignRoleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Asignar Rol a Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Usuario</label>
+                        <select class="form-select" id="modalUsername">
+                            <option value="">Seleccionar usuario...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        <select class="form-select" id="modalRole">
+                            <option value="">Seleccionar rol...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Compañía</label>
+                        <select class="form-select" id="modalCompany">
+                            <option value="*">Todas las compañías</option>
+                            <option value="SBO_GT_STIA_PROD">🇬🇹 Guatemala</option>
+                            <option value="SBO_HO_STIA_PROD">🇭🇳 Honduras</option>
+                            <option value="SBO_PA_STIA_PROD">🇵🇦 Panamá</option>
+                            <option value="SBO_STIACR_PROD">🇨🇷 Costa Rica</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="assignRole()">Asignar Rol</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Ver Permisos de Rol -->
+    <div class="modal fade" id="rolePermissionsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Permisos del Rol: <span id="roleNameModal"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="rolePermissionsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <span class="bluesystem-brand">BlueSystemIO</span>
+                <span>2025</span>
+            </div>
+            <div class="footer-right">
+                <span>Version 1.0.0</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = '/api/admin';
+        let currentUsers = [];
+        let currentRoles = [];
+        let assignRoleModalObj = null;
+        let rolePermissionsModalObj = null;
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadAppConfig();
+            checkAuth();
+
+            // Inicializar modals
+            assignRoleModalObj = new bootstrap.Modal(document.getElementById('assignRoleModal'));
+            rolePermissionsModalObj = new bootstrap.Modal(document.getElementById('rolePermissionsModal'));
+
+            // Agregar event listener para búsqueda en tiempo real
+            const searchInput = document.getElementById('searchUsers');
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                // Debounce: esperar 500ms después de que el usuario deje de escribir
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    if (currentUsers.length > 0) {
+                        loadUsers();
+                    }
+                }, 500);
+            });
+
+            // Permitir búsqueda con Enter
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    loadUsers();
+                }
+            });
+        });
+
+        // Cargar configuración de la app
+        async function loadAppConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+
+                document.getElementById('pageTitle').textContent = `${config.appName} - Administración`;
+                document.getElementById('systemTitle').textContent = config.appName;
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+
+        // Verificar autenticación
+        function checkAuth() {
+            const authData = localStorage.getItem('sapAuth');
+            if (!authData) {
+                window.location.href = '/login';
+                return;
+            }
+
+            const auth = JSON.parse(authData);
+            const username = auth.username;
+
+            // Solo permitir acceso a stifmolina2
+            if (username !== 'stifmolina2') {
+                showAlert('No tienes permisos para acceder a esta página', 'danger');
+                setTimeout(() => window.location.href = '/dashboard', 2000);
+                return;
+            }
+
+            document.getElementById('username').textContent = username;
+        }
+
+        // Mostrar alerta
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.getElementById('alertContainer').appendChild(alertDiv);
+
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        // PASO 1: Sincronizar usuarios
+        async function syncUsers() {
+            const btn = document.getElementById('syncBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+
+            document.getElementById('step1Status').className = 'step-status status-in-progress';
+            document.getElementById('step1Status').textContent = 'En progreso';
+
+            try {
+                // Obtener datos de autenticación
+                const authData = localStorage.getItem('sapAuth');
+                if (!authData) {
+                    throw new Error('No hay sesión activa');
+                }
+
+                const auth = JSON.parse(authData);
+                const username = auth.username;
+
+                // Obtener sessionId de Costa Rica desde auth.sessions
+                const sessions = auth.sessions || {};
+                const crSession = sessions['SBO_STIACR_PROD'];
+
+                if (!crSession || !crSession.sessionId || !crSession.success) {
+                    throw new Error('No hay sesión activa para SAP Costa Rica. Inicia sesión primero.');
+                }
+
+                const crSessionId = crSession.sessionId;
+
+                const response = await fetch(`${API_BASE}/users/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: username,
+                        sessionId: crSessionId,
+                        companyDB: 'SBO_STIACR_PROD'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('syncResult').innerHTML = `
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-check-circle"></i> Sincronización Exitosa</h6>
+                            <ul class="mb-0">
+                                <li>Total de usuarios: ${data.total}</li>
+                                <li>Nuevos usuarios: ${data.synced}</li>
+                                <li>Actualizados: ${data.updated}</li>
+                            </ul>
+                        </div>
+                    `;
+
+                    document.getElementById('step1Status').className = 'step-status status-completed';
+                    document.getElementById('step1Status').textContent = 'Completado';
+
+                    showAlert('Usuarios sincronizados exitosamente', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('syncResult').innerHTML = `
+                    <div class="alert alert-danger">
+                        Error: ${error.message}
+                    </div>
+                `;
+                showAlert('Error al sincronizar usuarios', 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync"></i> Sincronizar Usuarios';
+            }
+        }
+
+        // PASO 2: Cargar usuarios
+        async function loadUsers() {
+            document.getElementById('step2Status').className = 'step-status status-in-progress';
+            document.getElementById('step2Status').textContent = 'Cargando';
+
+            try {
+                const authData = localStorage.getItem('sapAuth');
+                const auth = JSON.parse(authData);
+
+                const search = document.getElementById('searchUsers').value;
+                let url = `${API_BASE}/users`;
+                if (search) url += `?search=${encodeURIComponent(search)}`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUsers = data.users;
+                    displayUsers(data.users);
+
+                    document.getElementById('step2Status').className = 'step-status status-completed';
+                    document.getElementById('step2Status').textContent = 'Completado';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar usuarios', 'danger');
+            }
+        }
+
+        function displayUsers(users) {
+            if (users.length === 0) {
+                document.getElementById('usersTableContainer').innerHTML = `
+                    <div class="alert alert-warning">No se encontraron usuarios</div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-striped users-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Nombre Completo</th>
+                                <th>Email</th>
+                                <th>Estado</th>
+                                <th>Roles</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            users.forEach(user => {
+                const rolesText = user.roles && user.roles.length > 0
+                    ? user.roles.map(r => `<span class="badge bg-primary">${r.role} (${r.company_db || 'Todas'})</span>`).join(' ')
+                    : '<span class="text-muted">Sin roles</span>';
+
+                html += `
+                    <tr>
+                        <td><strong>${user.username}</strong></td>
+                        <td>${user.full_name || '-'}</td>
+                        <td>${user.email || '-'}</td>
+                        <td>
+                            <span class="badge bg-${user.is_active ? 'success' : 'danger'}">
+                                ${user.is_active ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </td>
+                        <td>${rolesText}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="openAssignRoleModal('${user.username}')">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('usersTableContainer').innerHTML = html;
+        }
+
+        // PASO 3: Asignar rol
+        async function openAssignRoleModal(username = null) {
+            // Cargar usuarios si no están cargados
+            if (currentUsers.length === 0) {
+                await loadUsers();
+            }
+
+            // Cargar roles si no están cargados
+            if (currentRoles.length === 0) {
+                const authData = localStorage.getItem('sapAuth');
+                const auth = JSON.parse(authData);
+
+                const response = await fetch(`${API_BASE}/roles`, {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    currentRoles = data.roles;
+                }
+            }
+
+            // Poblar dropdown de usuarios (solo activos, ordenados alfabéticamente)
+            const userSelect = document.getElementById('modalUsername');
+            userSelect.innerHTML = '<option value="">Seleccionar usuario...</option>';
+
+            // Filtrar solo usuarios activos y ordenar alfabéticamente
+            const activeUsers = currentUsers
+                .filter(user => user.is_active === true)
+                .sort((a, b) => {
+                    const nameA = (a.full_name || a.username).toLowerCase();
+                    const nameB = (b.full_name || b.username).toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+
+            activeUsers.forEach(user => {
+                userSelect.innerHTML += `<option value="${user.username}">${user.username} - ${user.full_name || user.username}</option>`;
+            });
+
+            // Poblar dropdown de roles
+            const roleSelect = document.getElementById('modalRole');
+            roleSelect.innerHTML = '<option value="">Seleccionar rol...</option>';
+            currentRoles.forEach(role => {
+                roleSelect.innerHTML += `<option value="${role.id}">${role.name} - ${role.description}</option>`;
+            });
+
+            // Pre-seleccionar usuario si se proporcionó
+            if (username) {
+                userSelect.value = username;
+            }
+
+            assignRoleModalObj.show();
+        }
+
+        async function assignRole() {
+            const username = document.getElementById('modalUsername').value;
+            const roleId = document.getElementById('modalRole').value;
+            const companyDB = document.getElementById('modalCompany').value;
+
+            if (!username || !roleId) {
+                showAlert('Debes seleccionar un usuario y un rol', 'warning');
+                return;
+            }
+
+            try {
+                const authData = localStorage.getItem('sapAuth');
+                const auth = JSON.parse(authData);
+
+                const response = await fetch(`${API_BASE}/users/${username}/roles`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-sap-username': auth.username
+                    },
+                    body: JSON.stringify({
+                        username: auth.username,
+                        roleId: parseInt(roleId),
+                        companyDB: companyDB === '*' ? null : companyDB
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('Rol asignado exitosamente', 'success');
+                    assignRoleModalObj.hide();
+                    loadUsers(); // Recargar usuarios
+
+                    document.getElementById('step3Status').className = 'step-status status-completed';
+                    document.getElementById('step3Status').textContent = 'Completado';
+                } else {
+                    showAlert(`Error: ${data.error}`, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al asignar rol', 'danger');
+            }
+        }
+
+        // PASO 4: Ver roles
+        async function loadRoles() {
+            document.getElementById('step4Status').className = 'step-status status-in-progress';
+            document.getElementById('step4Status').textContent = 'Cargando';
+
+            try {
+                const authData = localStorage.getItem('sapAuth');
+                const auth = JSON.parse(authData);
+
+                const response = await fetch(`${API_BASE}/roles`, {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    currentRoles = data.roles;
+                    displayRoles(data.roles);
+
+                    document.getElementById('step4Status').className = 'step-status status-completed';
+                    document.getElementById('step4Status').textContent = 'Completado';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar roles', 'danger');
+            }
+        }
+
+        function displayRoles(roles) {
+            let html = '<div class="row mt-3">';
+
+            roles.forEach(role => {
+                html += `
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">${role.name}</h6>
+                                <p class="card-text small">${role.description}</p>
+                                <p class="mb-2">
+                                    <span class="badge bg-info">${role.permissions_count} permisos</span>
+                                    ${role.is_system_role ? '<span class="badge bg-warning">Sistema</span>' : ''}
+                                </p>
+                                <button class="btn btn-sm btn-primary" onclick="viewRolePermissions(${role.id}, '${role.name}')">
+                                    Ver Permisos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            document.getElementById('rolesContainer').innerHTML = html;
+        }
+
+        async function viewRolePermissions(roleId, roleName) {
+            try {
+                const authData = localStorage.getItem('sapAuth');
+                const auth = JSON.parse(authData);
+
+                const response = await fetch(`${API_BASE}/roles/${roleId}/permissions`, {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('roleNameModal').textContent = roleName;
+
+                    let html = '<div class="list-group">';
+
+                    if (data.permissions.length === 0) {
+                        html += '<div class="alert alert-warning">Este rol no tiene permisos asignados</div>';
+                    } else {
+                        data.permissions.forEach(perm => {
+                            html += `
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>${perm.resource}</strong>
+                                        <span class="badge bg-primary">${perm.action}</span>
+                                    </div>
+                                    <small class="text-muted">${perm.description}</small>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    html += '</div>';
+                    document.getElementById('rolePermissionsContent').innerHTML = html;
+                    rolePermissionsModalObj.show();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar permisos', 'danger');
+            }
+        }
+
+        // PASO 5: Auditoría
+        async function loadAuditLogs() {
+            document.getElementById('step5Status').className = 'step-status status-in-progress';
+            document.getElementById('step5Status').textContent = 'Cargando';
+
+            try {
+                const authData = localStorage.getItem('sapAuth');
+                const auth = JSON.parse(authData);
+
+                const username = document.getElementById('filterUsername').value;
+                const resource = document.getElementById('filterResource').value;
+                const limit = document.getElementById('filterLimit').value;
+
+                let url = `${API_BASE}/audit-logs?limit=${limit}`;
+                if (username) url += `&username=${encodeURIComponent(username)}`;
+                if (resource) url += `&resource=${encodeURIComponent(resource)}`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'x-sap-username': auth.username
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    displayAuditLogs(data.logs);
+
+                    document.getElementById('step5Status').className = 'step-status status-completed';
+                    document.getElementById('step5Status').textContent = 'Completado';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar logs', 'danger');
+            }
+        }
+
+        function displayAuditLogs(logs) {
+            if (logs.length === 0) {
+                document.getElementById('auditLogsContainer').innerHTML = `
+                    <div class="alert alert-info">No se encontraron logs</div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Usuario</th>
+                                <th>Acción</th>
+                                <th>Recurso</th>
+                                <th>Compañía</th>
+                                <th>Estado</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            logs.forEach(log => {
+                const date = new Date(log.created_at).toLocaleString('es-CR');
+                const statusBadge = log.success
+                    ? '<span class="badge bg-success">✓</span>'
+                    : '<span class="badge bg-danger">✗</span>';
+
+                html += `
+                    <tr>
+                        <td><small>${date}</small></td>
+                        <td><strong>${log.username}</strong></td>
+                        <td><code>${log.action}</code></td>
+                        <td>${log.resource}</td>
+                        <td>${log.company_db || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td><small>${log.ip_address || '-'}</small></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('auditLogsContainer').innerHTML = html;
+        }
+    </script>
+    <!-- Inactivity Manager - Auto logout after 5 minutes of inactivity -->
+    <script src="/js/inactivityManager.js"></script>
+</body>
+</html>
