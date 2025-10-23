@@ -1179,35 +1179,44 @@
                             ${pageResults.map(item => {
                                 const stockValue = item.stock || 0;
                                 const totalStockValue = item.totalStock || 0;
+                                const minStock = item.minStock || 0;
+                                const maxStock = item.maxStock || 0;
                                 const warehouseExists = item.warehouseExists !== false; // Por defecto true si no está definido
 
-                                // Clases CSS según el stock del almacén '00'
-                                const stockClass = stockValue > 0 ? 'stock-available' : 'stock-zero';
+                                // Icono según el stock del almacén '00'
                                 const stockIcon = stockValue > 0 ? '📦' : '❌';
 
                                 const unit = item.unit || 'uni';
 
+                                // NUEVA REGLA: Fila ROJA si stock está fuera del rango, VERDE si está dentro del rango
+                                // Fuera de rango: Stock >= Máximo O Stock < Mínimo
+                                const isOutOfRange = (maxStock > 0 && stockValue >= maxStock) || (minStock > 0 && stockValue < minStock);
+                                const rowStyle = isOutOfRange ? 'background-color: #ffebee !important;' : 'background-color: #e8f5e9 !important;'; // Rojo fuera de rango, verde dentro del rango
+
+                                // Color de texto para el stock según si está fuera de rango
+                                const stockColor = isOutOfRange ? 'color: #c62828;' : 'color: #2e7d32;';
+
                                 // Título con detalles del almacén para hover
                                 const warehouseTitle = warehouseExists
-                                    ? `Almacén '00' encontrado - Stock: ${stockValue} ${unit}`
+                                    ? `Almacén '00' encontrado - Stock: ${stockValue} ${unit}\nMínimo: ${minStock} ${unit}\nMáximo: ${maxStock} ${unit}`
                                     : `⚠️ Almacén '00' NO existe para este artículo en ${item.country}`;
 
                                 // Indicador visual si el almacén no existe
                                 const warehouseWarning = !warehouseExists ? '⚠️ ' : '';
 
                                 return `
-                                <tr ${!warehouseExists ? 'style="opacity: 0.7;"' : ''}>
-                                    <td><span class="country-flag">${item.flag || '🏢'} ${item.country || 'N/A'}</span></td>
-                                    <td class="item-code">${item.itemCode || 'N/A'}</td>
-                                    <td class="item-description">${item.itemName || item.description || 'N/A'}</td>
-                                    <td class="part-number">${item.numeroParte || 'Sin número de parte'}</td>
-                                    <td class="stock-cell ${stockClass}" title="${warehouseTitle}">
+                                <tr${!warehouseExists ? ' style="opacity: 0.7;"' : ''}>
+                                    <td style="${rowStyle}"><span class="country-flag">${item.flag || '🏢'} ${item.country || 'N/A'}</span></td>
+                                    <td class="item-code" style="${rowStyle}">${item.itemCode || 'N/A'}</td>
+                                    <td class="item-description" style="${rowStyle}">${item.itemName || item.description || 'N/A'}</td>
+                                    <td class="part-number" style="${rowStyle}">${item.numeroParte || 'Sin número de parte'}</td>
+                                    <td class="stock-cell" style="${rowStyle} ${stockColor} font-weight: 600;" title="${warehouseTitle}">
                                         ${warehouseWarning}${stockIcon} ${stockValue} ${unit}
                                     </td>
-                                    <td class="stock-cell" style="text-align: center;">
+                                    <td class="stock-cell" style="${rowStyle} text-align: center;">
                                         ${item.minStock || 0} ${unit}
                                     </td>
-                                    <td class="stock-cell" style="text-align: center;">
+                                    <td class="stock-cell" style="${rowStyle} text-align: center;">
                                         ${item.maxStock || 0} ${unit}
                                     </td>
                                 </tr>

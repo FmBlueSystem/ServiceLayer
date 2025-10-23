@@ -753,11 +753,39 @@
         <!-- Stats Cards -->
         <section class="stats-section fade-in" style="animation-delay: 0.1s">
             <div class="stats-grid">
+                <!-- Costa Rica Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-icon">💱</div>
+                    <div class="stat-icon">🇨🇷</div>
                     <div class="stat-content">
-                        <h3 class="stat-number" id="exchangeRate">₡506.99</h3>
-                        <p class="stat-label">USD/CRC (BCCR)</p>
+                        <h3 class="stat-number" id="exchangeRateCR">₡506.99</h3>
+                        <p class="stat-label">USD/CRC</p>
+                    </div>
+                </div>
+
+                <!-- Honduras Exchange Rate -->
+                <div class="stat-card">
+                    <div class="stat-icon">🇭🇳</div>
+                    <div class="stat-content">
+                        <h3 class="stat-number" id="exchangeRateHN">L24.50</h3>
+                        <p class="stat-label">USD/HNL</p>
+                    </div>
+                </div>
+
+                <!-- Guatemala Exchange Rate -->
+                <div class="stat-card">
+                    <div class="stat-icon">🇬🇹</div>
+                    <div class="stat-content">
+                        <h3 class="stat-number" id="exchangeRateGT">Q7.85</h3>
+                        <p class="stat-label">USD/GTQ</p>
+                    </div>
+                </div>
+
+                <!-- Panama Exchange Rate -->
+                <div class="stat-card">
+                    <div class="stat-icon">🇵🇦</div>
+                    <div class="stat-content">
+                        <h3 class="stat-number" id="exchangeRatePA">B/.1.00</h3>
+                        <p class="stat-label">USD/PAB</p>
                     </div>
                 </div>
             </div>
@@ -957,7 +985,7 @@
             
         }
 
-        // Load BCCR exchange rate
+        // Load BCCR exchange rate for Costa Rica
         async function loadExchangeRate() {
             try {
                 const response = await fetch('/api/sap/demo/bccr-rates');
@@ -965,13 +993,68 @@
 
                 if (data.success && data.data && data.data.costaRica) {
                     // For now, we'll use the static rate since BCCR parsing needs fixing
-                    const exchangeRateEl = document.getElementById('exchangeRate');
+                    const exchangeRateEl = document.getElementById('exchangeRateCR');
                     if (exchangeRateEl) {
                         exchangeRateEl.textContent = '₡506.99';
                     }
                 }
             } catch (error) {
                 console.log('Exchange rate fetch failed, using cached value');
+            }
+        }
+
+        // Load exchange rates from SAP for Honduras, Guatemala, and Panama
+        async function loadMultiCountryExchangeRates() {
+            try {
+                const authData = checkAuth();
+                if (!authData || !authData.sessionId) {
+                    console.log('No session ID available');
+                    return;
+                }
+
+                const response = await fetch('/sap/exchange-rates/multi-country', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sessionId: authData.sessionId,
+                        countries: ['HONDURAS', 'GUATEMALA', 'PANAMA']
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.results) {
+                    // Honduras
+                    if (data.results.HONDURAS && data.results.HONDURAS.success && data.results.HONDURAS.data && data.results.HONDURAS.data.length > 0) {
+                        const hnRate = data.results.HONDURAS.data[0].rate;
+                        const hnEl = document.getElementById('exchangeRateHN');
+                        if (hnEl) {
+                            hnEl.textContent = `L${hnRate.toFixed(2)}`;
+                        }
+                    }
+
+                    // Guatemala
+                    if (data.results.GUATEMALA && data.results.GUATEMALA.success && data.results.GUATEMALA.data && data.results.GUATEMALA.data.length > 0) {
+                        const gtRate = data.results.GUATEMALA.data[0].rate;
+                        const gtEl = document.getElementById('exchangeRateGT');
+                        if (gtEl) {
+                            gtEl.textContent = `Q${gtRate.toFixed(2)}`;
+                        }
+                    }
+
+                    // Panama
+                    if (data.results.PANAMA && data.results.PANAMA.success && data.results.PANAMA.data && data.results.PANAMA.data.length > 0) {
+                        const paRate = data.results.PANAMA.data[0].rate;
+                        const paEl = document.getElementById('exchangeRatePA');
+                        if (paEl) {
+                            paEl.textContent = `B/.${paRate.toFixed(2)}`;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('Multi-country exchange rates fetch failed, using cached values', error);
             }
         }
 
@@ -1230,15 +1313,19 @@
             checkAuth();
             loadUserInfo();
             await loadUserPages(); // Load dynamic pages from user's assigned roles
-            loadExchangeRate();
+            loadExchangeRate(); // Costa Rica (BCCR)
+            loadMultiCountryExchangeRates(); // Honduras, Guatemala, Panama (SAP)
             verificarConexiones();
 
             // Update session duration every minute
             setInterval(updateSessionDuration, 60000);
             updateSessionDuration();
 
-            // Update exchange rate every 15 minutes
-            setInterval(loadExchangeRate, 15 * 60 * 1000);
+            // Update exchange rates every 15 minutes
+            setInterval(() => {
+                loadExchangeRate(); // Costa Rica (BCCR)
+                loadMultiCountryExchangeRates(); // Honduras, Guatemala, Panama (SAP)
+            }, 15 * 60 * 1000);
 
             // Update connections every 30 seconds
             setInterval(verificarConexiones, 30000);
