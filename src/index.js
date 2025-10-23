@@ -64,6 +64,7 @@ class Application {
           formAction: ["'self'", "javascript:"],
           fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
           connectSrc: ["'self'", "https:", "wss:"],
+          upgradeInsecureRequests: null, // Desactivar upgrade automático a HTTPS en desarrollo
         },
       },
       hsts: process.env.NODE_ENV === 'production',
@@ -176,7 +177,7 @@ class Application {
         'Pragma': 'no-cache',
         'Expires': '0'
       });
-      res.sendFile(path.join(__dirname, '../public/login-simple.html'));
+      res.sendFile(path.join(__dirname, '../public/login.html'));
     });
 
     // Serve dashboard page (protected route - client-side auth check)

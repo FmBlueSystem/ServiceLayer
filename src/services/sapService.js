@@ -807,16 +807,23 @@ class SAPService {
 
       // Agregar selección de campos específicos y paginación
       const separator = endpoint.includes('?') ? '&' : '?';
-      // Agregar campos de stock directamente desde Items
-      // NOTA: PurchaseUnit, CommittedQuantity y OrderedQuantity removidos del $select
-      // porque no son propiedades válidas en todas las bases de datos SAP
-      endpoint += `${separator}$select=ItemCode,ItemName,U_Cod_Proveedor,QuantityOnStock&$top=${filters.limit || 50}&$skip=${filters.offset || 0}`;
+
+      // CORRECCIÓN: Consultar stock del almacén '00' específicamente usando $expand
+      // ItemWarehouseInfoCollection contiene el stock por almacén
+      // InStock es el campo equivalente a OnHand de la tabla OITW
+      const warehouseCode = filters.warehouseCode || '00'; // Permitir configurar el almacén, por defecto '00'
+
+      endpoint += `${separator}$select=ItemCode,ItemName,U_Cod_Proveedor,QuantityOnStock,ItemWarehouseInfoCollection`;
+      endpoint += `&$top=${filters.limit || 50}&$skip=${filters.offset || 0}`;
 
       logger.info('Final endpoint before SAP API call', {
         finalEndpoint: endpoint,
         endpointLength: endpoint.length,
         containsFilter: endpoint.includes('$filter'),
-        containsSelect: endpoint.includes('$select')
+        containsSelect: endpoint.includes('$select'),
+        containsExpand: endpoint.includes('$expand'),
+        warehouseCode: warehouseCode,
+        companyDB: headers.CompanyDB
       });
 
       const result = await this.callSAPAPI(endpoint, 'GET', null, headers);
@@ -842,28 +849,83 @@ class SAPService {
           dataKeys: Object.keys(data),
           odataCount: data['@odata.count'],
           firstItemSample: data.value && data.value.length > 0 ? data.value[0] : 'no items',
-          firstItemKeys: data.value && data.value.length > 0 ? Object.keys(data.value[0]) : 'no items'
+          firstItemKeys: data.value && data.value.length > 0 ? Object.keys(data.value[0]) : 'no items',
+          hasWarehouseCollection: data.value && data.value.length > 0 && data.value[0].ItemWarehouseInfoCollection ? true : false
         });
 
-        // Los campos de stock ya vienen directamente en la consulta Items
-        const items = (data.value || []).map(item => ({
-          ...item,
-          // Agregar unidad por defecto para mantener compatibilidad
-          // En SAP, la unidad de inventario es típicamente la misma para todos los movimientos
-          PurchaseUnit: 'uni' // Valor por defecto persistente
-        }));
+        // CORRECCIÓN: Extraer stock del almacén específico desde ItemWarehouseInfoCollection
+        const warehouseCode = filters.warehouseCode || '00';
+        const items = (data.value || []).map(item => {
+          // Buscar el stock del almacén específico en la colección
+          let warehouseStock = 0;
+          let warehouseExists = false;
+          let warehouseDetails = null;
 
-        // Log stock information for debugging
+          if (item.ItemWarehouseInfoCollection && Array.isArray(item.ItemWarehouseInfoCollection)) {
+            const warehouse = item.ItemWarehouseInfoCollection.find(w => w.WarehouseCode === warehouseCode);
+
+            if (warehouse) {
+              warehouseExists = true;
+              warehouseStock = warehouse.InStock || 0;
+
+              // Log para ver todos los campos del warehouse
+              logger.info('Warehouse object fields', {
+                itemCode: item.ItemCode,
+                warehouseCode: warehouse.WarehouseCode,
+                allFields: Object.keys(warehouse),
+                warehouse: warehouse
+              });
+
+              warehouseDetails = {
+                warehouseCode: warehouse.WarehouseCode,
+                inStock: warehouse.InStock || 0,
+                locked: warehouse.Locked || 0,
+                committed: warehouse.Committed || 0,
+                ordered: warehouse.Ordered || 0,
+                available: (warehouse.InStock || 0) - (warehouse.Committed || 0), // Stock disponible real
+                minimumStock: warehouse.MinStock || warehouse.MinimalStock || warehouse.MinimumStock || 0,
+                maximumStock: warehouse.MaxStock || warehouse.MaximalStock || warehouse.MaximumStock || 0
+              };
+            }
+          }
+
+          return {
+            ...item,
+            // Stock del almacén específico (almacén '00' por defecto)
+            WarehouseStock: warehouseStock,
+            WarehouseCode: warehouseCode,
+            WarehouseExists: warehouseExists,
+            WarehouseDetails: warehouseDetails,
+            // Mantener QuantityOnStock para referencia (stock total)
+            QuantityOnStock: item.QuantityOnStock || 0,
+            // Unidad por defecto
+            PurchaseUnit: 'uni'
+          };
+        });
+
+        // Log detallado del stock por almacén para debugging
         items.forEach(item => {
-          logger.info('Item stock from SAP', {
+          logger.info('Item stock from SAP with Warehouse details', {
             itemCode: item.ItemCode,
             itemName: item.ItemName,
-            quantityOnStock: item.QuantityOnStock,
-            committedQuantity: item.CommittedQuantity,
-            orderedQuantity: item.OrderedQuantity,
-            purchaseUnit: item.PurchaseUnit,
+            warehouseCode: warehouseCode,
+            warehouseExists: item.WarehouseExists,
+            warehouseStock: item.WarehouseStock,
+            totalStock: item.QuantityOnStock,
+            warehouseDetails: item.WarehouseDetails,
             companyDB: headers.CompanyDB
           });
+
+          // Advertencia si el almacén no existe para el artículo
+          if (!item.WarehouseExists) {
+            logger.warn('Warehouse not found for item', {
+              itemCode: item.ItemCode,
+              warehouseCode: warehouseCode,
+              companyDB: headers.CompanyDB,
+              availableWarehouses: item.ItemWarehouseInfoCollection ?
+                item.ItemWarehouseInfoCollection.map(w => w.WarehouseCode).join(', ') : 'none'
+            });
+          }
         });
 
         return {

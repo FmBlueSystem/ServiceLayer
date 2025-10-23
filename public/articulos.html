@@ -170,6 +170,16 @@
             color: #32363A;
         }
 
+        .sap-table th:nth-child(6), .sap-table td:nth-child(6) {
+            width: 120px;
+            text-align: right;
+        }
+
+        .sap-table td:nth-child(6) {
+            font-weight: 500;
+            color: #6c757d;
+        }
+
         /* Banderas de países - estilo simplificado */
         .country-flag {
             display: inline-flex;
@@ -1031,21 +1041,34 @@
 
                         if (result.success && result.data && result.data.value) {
                             result.data.value.forEach(item => {
-                                // Usar QuantityOnStock directamente (stock total del artículo)
-                                const totalStock = item.QuantityOnStock || 0;
+                                // CORRECCIÓN: Usar WarehouseStock del almacén '00' específicamente
+                                // En lugar de QuantityOnStock que es el stock total
+                                const warehouseStock = item.WarehouseStock || 0;
+                                const warehouseExists = item.WarehouseExists || false;
+                                const warehouseDetails = item.WarehouseDetails || null;
 
                                 // Obtener unidad de compra (PurchaseUnit con valor por defecto persistente)
-                                // El backend siempre retorna 'uni' como valor por defecto
                                 const unit = item.PurchaseUnit || 'uni';
 
-                                // Log para debugging (solo para artículos específicos)
-                                if (item.ItemCode === '23302008') {
-                                    console.log('🔍 Artículo 23302008 encontrado:', {
+                                // Log detallado para debugging con información del almacén
+                                console.log('📦 Artículo procesado:', {
+                                    ItemCode: item.ItemCode,
+                                    ItemName: item.ItemName,
+                                    WarehouseCode: item.WarehouseCode || '00',
+                                    WarehouseExists: warehouseExists,
+                                    WarehouseStock: warehouseStock,
+                                    TotalStock: item.QuantityOnStock || 0,
+                                    WarehouseDetails: warehouseDetails,
+                                    Company: countryNames[session.companyDB]
+                                });
+
+                                // Advertencia en consola si el almacén '00' no existe para el artículo
+                                if (!warehouseExists) {
+                                    console.warn('⚠️ Almacén no encontrado para artículo:', {
                                         ItemCode: item.ItemCode,
-                                        ItemName: item.ItemName,
-                                        PurchaseUnit: unit,
-                                        QuantityOnStock: item.QuantityOnStock,
-                                        Compañia: countryNames[session.companyDB]
+                                        WarehouseCode: item.WarehouseCode || '00',
+                                        Company: countryNames[session.companyDB],
+                                        TotalStock: item.QuantityOnStock || 0
                                     });
                                 }
 
@@ -1054,8 +1077,14 @@
                                     itemName: item.ItemName,
                                     description: item.ItemName,
                                     numeroParte: item.U_Cod_Proveedor || 'Sin número de parte',
-                                    stock: totalStock,
+                                    stock: warehouseStock, // Stock del almacén '00' específicamente
+                                    totalStock: item.QuantityOnStock || 0, // Stock total para referencia
+                                    minStock: warehouseDetails ? (warehouseDetails.minimumStock || 0) : 0,
+                                    maxStock: warehouseDetails ? (warehouseDetails.maximumStock || 0) : 0,
                                     unit: unit,
+                                    warehouseCode: item.WarehouseCode || '00',
+                                    warehouseExists: warehouseExists,
+                                    warehouseDetails: warehouseDetails,
                                     country: countryNames[session.companyDB],
                                     flag: flags[session.companyDB],
                                     companyDB: session.companyDB
@@ -1141,23 +1170,46 @@
                                 <th>Código de Artículo</th>
                                 <th>Descripción</th>
                                 <th>Número de Parte</th>
-                                <th>Stock</th>
+                                <th>Stock Alm. 00</th>
+                                <th>Mínimo</th>
+                                <th>Máximo</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${pageResults.map(item => {
                                 const stockValue = item.stock || 0;
+                                const totalStockValue = item.totalStock || 0;
+                                const warehouseExists = item.warehouseExists !== false; // Por defecto true si no está definido
+
+                                // Clases CSS según el stock del almacén '00'
                                 const stockClass = stockValue > 0 ? 'stock-available' : 'stock-zero';
                                 const stockIcon = stockValue > 0 ? '📦' : '❌';
+
                                 const unit = item.unit || 'uni';
 
+                                // Título con detalles del almacén para hover
+                                const warehouseTitle = warehouseExists
+                                    ? `Almacén '00' encontrado - Stock: ${stockValue} ${unit}`
+                                    : `⚠️ Almacén '00' NO existe para este artículo en ${item.country}`;
+
+                                // Indicador visual si el almacén no existe
+                                const warehouseWarning = !warehouseExists ? '⚠️ ' : '';
+
                                 return `
-                                <tr>
+                                <tr ${!warehouseExists ? 'style="opacity: 0.7;"' : ''}>
                                     <td><span class="country-flag">${item.flag || '🏢'} ${item.country || 'N/A'}</span></td>
                                     <td class="item-code">${item.itemCode || 'N/A'}</td>
                                     <td class="item-description">${item.itemName || item.description || 'N/A'}</td>
                                     <td class="part-number">${item.numeroParte || 'Sin número de parte'}</td>
-                                    <td class="stock-cell ${stockClass}">${stockIcon} ${stockValue} ${unit}</td>
+                                    <td class="stock-cell ${stockClass}" title="${warehouseTitle}">
+                                        ${warehouseWarning}${stockIcon} ${stockValue} ${unit}
+                                    </td>
+                                    <td class="stock-cell" style="text-align: center;">
+                                        ${item.minStock || 0} ${unit}
+                                    </td>
+                                    <td class="stock-cell" style="text-align: center;">
+                                        ${item.maxStock || 0} ${unit}
+                                    </td>
                                 </tr>
                                 `;
                             }).join('')}
@@ -1376,8 +1428,9 @@
                     ['Usuario:', usuario],
                     ['Fecha y Hora de Generación:', fechaHora],
                     [`Total de Registros:`, currentResults.length],
+                    ['Almacén Consultado:', '00'],
                     [''], // Fila vacía para separación
-                    ['Compañía', 'Código de Artículo', 'Descripción', 'Número de Parte', 'Stock']
+                    ['Compañía', 'Código de Artículo', 'Descripción', 'Número de Parte', 'Stock Alm. 00', 'Stock Total', 'Almacén Existe']
                 ];
 
                 // Preparar datos de artículos
@@ -1386,7 +1439,9 @@
                     item.itemCode || 'N/A',
                     item.itemName || item.description || 'N/A',
                     item.numeroParte || 'Sin número de parte',
-                    `${item.stock || 0} ${item.unit || 'uni'}`
+                    `${item.stock || 0} ${item.unit || 'uni'}`,
+                    `${item.totalStock || 0} ${item.unit || 'uni'}`,
+                    item.warehouseExists !== false ? 'Sí' : 'No'
                 ]);
 
                 // Combinar encabezado con datos
@@ -1402,7 +1457,9 @@
                     { wch: 20 },  // Código de Artículo
                     { wch: 40 },  // Descripción
                     { wch: 20 },  // Número de Parte
-                    { wch: 12 }   // Stock
+                    { wch: 15 },  // Stock Alm. 00
+                    { wch: 12 },  // Stock Total
+                    { wch: 12 }   // Almacén Existe
                 ];
                 ws['!cols'] = colWidths;
 
@@ -1416,7 +1473,7 @@
 
                 // Merge de la primera fila (título) - ahora es la fila 1 (índice 0)
                 ws['!merges'] = [
-                    { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }, // Título: merge A1 a E1
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Título: merge A1 a G1 (7 columnas)
                 ];
 
                 // Agregar hoja al libro
@@ -1487,42 +1544,50 @@
                 doc.text(`Usuario: ${usuario}`, 20, yPos);
                 doc.text(`Fecha y Hora: ${fechaHora}`, 20, yPos + 6);
                 doc.text(`Total de Registros: ${currentResults.length}`, 20, yPos + 12);
+                doc.text(`Almacén Consultado: 00`, 20, yPos + 18);
 
                 // Preparar datos para la tabla
-                const tableData = currentResults.map(item => [
-                    item.country || 'N/A',
-                    item.itemCode || 'N/A',
-                    item.itemName || item.description || 'N/A',
-                    item.numeroParte || 'Sin número de parte',
-                    `${item.stock || 0} ${item.unit || 'uni'}`
-                ]);
+                const tableData = currentResults.map(item => {
+                    const warehouseExistsText = item.warehouseExists !== false ? 'Sí' : 'No';
+                    return [
+                        item.country || 'N/A',
+                        item.itemCode || 'N/A',
+                        item.itemName || item.description || 'N/A',
+                        item.numeroParte || 'Sin número de parte',
+                        `${item.stock || 0} ${item.unit || 'uni'}`,
+                        `${item.totalStock || 0} ${item.unit || 'uni'}`,
+                        warehouseExistsText
+                    ];
+                });
 
                 // Generar tabla con autoTable
                 doc.autoTable({
-                    startY: yPos + 20,
-                    head: [['Compañía', 'Código de Artículo', 'Descripción', 'Número de Parte', 'Stock']],
+                    startY: yPos + 26,
+                    head: [['Compañía', 'Código', 'Descripción', 'Nro. Parte', 'Stock Alm. 00', 'Stock Total', 'Alm. Existe']],
                     body: tableData,
                     theme: 'striped',
                     headStyles: {
                         fillColor: [0, 112, 224], // Color azul SAP
                         textColor: [255, 255, 255],
                         fontStyle: 'bold',
-                        fontSize: 10,
+                        fontSize: 9,
                         halign: 'center'
                     },
                     bodyStyles: {
-                        fontSize: 9,
-                        cellPadding: 3
+                        fontSize: 8,
+                        cellPadding: 2
                     },
                     alternateRowStyles: {
                         fillColor: [230, 243, 255] // Azul claro SAP
                     },
                     columnStyles: {
-                        0: { cellWidth: 35, halign: 'center' },  // Compañía
-                        1: { cellWidth: 40, halign: 'left' },    // Código
-                        2: { cellWidth: 90, halign: 'left' },    // Descripción
-                        3: { cellWidth: 45, halign: 'left' },    // Número de Parte
-                        4: { cellWidth: 25, halign: 'right' }    // Stock
+                        0: { cellWidth: 30, halign: 'center' },  // Compañía
+                        1: { cellWidth: 35, halign: 'left' },    // Código
+                        2: { cellWidth: 70, halign: 'left' },    // Descripción
+                        3: { cellWidth: 35, halign: 'left' },    // Número de Parte
+                        4: { cellWidth: 25, halign: 'right' },   // Stock Alm. 00
+                        5: { cellWidth: 22, halign: 'right' },   // Stock Total
+                        6: { cellWidth: 18, halign: 'center' }   // Almacén Existe
                     },
                     styles: {
                         lineColor: [217, 217, 217], // Color borde SAP

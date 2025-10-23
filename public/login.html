@@ -144,7 +144,46 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--sap-text);
+            min-width: 100px;
+            text-align: left;
+            margin: 0;
+        }
+
+        .form-control {
+            flex: 1;
+            border: 1px solid #d0d5dd;
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-size: 14px;
+            background: var(--sap-white);
+            transition: all 0.2s ease;
+            color: var(--sap-text);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--sap-blue);
+            box-shadow: 0 0 0 3px rgba(0, 112, 224, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: #98a2b3;
+        }
+
+        .form-control.error {
+            border-color: var(--sap-error);
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
         }
 
         .sap-label {
@@ -547,13 +586,13 @@
                     }));
                     
                     showAlert(
-                        `¡Acceso autorizado! Conectado a ${result.successCount} de ${result.totalDatabases} bases de datos. Redirigiendo...`, 
+                        `¡Acceso autorizado! Conectado a ${result.successCount} de ${result.totalDatabases} bases de datos. Redirigiendo al dashboard...`,
                         'success'
                     );
-                    
-                    // Redirect after showing success message
+
+                    // Redirect to dashboard after showing success message
                     setTimeout(() => {
-                        window.location.href = '/articulos';
+                        window.location.href = '/dashboard';
                     }, 2000);
                 } else {
                     // Authentication failed
