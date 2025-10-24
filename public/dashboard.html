@@ -237,139 +237,85 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, var(--sap-white) 0%, #f8fbff 100%);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            background: var(--sap-white);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             display: flex;
-            flex-direction: column;
+            align-items: center;
             gap: 12px;
-            border: 2px solid transparent;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--sap-border);
+            transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--sap-blue), var(--bluesystem-accent));
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 32px rgba(0,112,224,0.2);
-            border-color: var(--sap-light-blue);
-        }
-
-        .stat-card:hover::before {
-            opacity: 1;
-        }
-
-        .stat-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,112,224,0.15);
+            border-color: var(--sap-blue);
         }
 
         .stat-icon {
-            font-size: 40px;
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, #E6F3FF 0%, #CCE5FF 100%);
-            border-radius: 16px;
+            font-size: 28px;
+            width: 48px;
+            height: 48px;
+            background: var(--sap-light-blue);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(0,112,224,0.15);
-        }
-
-        .stat-trend {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-trend.up {
-            background: rgba(16, 126, 62, 0.1);
-            color: var(--sap-success);
-        }
-
-        .stat-trend.down {
-            background: rgba(231, 76, 60, 0.1);
-            color: var(--sap-error);
-        }
-
-        .stat-trend.stable {
-            background: rgba(106, 109, 112, 0.1);
-            color: var(--sap-medium-gray);
         }
 
         .stat-content {
             flex: 1;
-        }
-
-        .stat-number {
-            font-size: 32px;
-            font-weight: 800;
-            color: var(--sap-dark-blue);
-            margin-bottom: 8px;
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-            letter-spacing: -1px;
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: var(--sap-medium-gray);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-            margin-bottom: 4px;
+            min-width: 0;
         }
 
         .stat-country {
-            font-size: 14px;
-            color: var(--sap-text);
+            font-size: 11px;
+            color: var(--sap-medium-gray);
             font-weight: 500;
-            margin-bottom: 8px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-number {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--sap-dark-blue);
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--sap-medium-gray);
+            margin-top: 2px;
         }
 
         .stat-meta {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 12px;
-            border-top: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .stat-date {
-            font-size: 11px;
-            color: var(--sap-medium-gray);
-            display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-end;
             gap: 4px;
         }
 
         .stat-source {
-            font-size: 10px;
-            color: var(--sap-medium-gray);
-            background: rgba(0,0,0,0.03);
-            padding: 3px 8px;
-            border-radius: 8px;
+            font-size: 9px;
+            color: var(--sap-blue);
+            background: var(--sap-light-blue);
+            padding: 2px 6px;
+            border-radius: 4px;
             font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .stat-date {
+            font-size: 9px;
+            color: var(--sap-medium-gray);
+            white-space: nowrap;
         }
 
         /* Section Headers */
@@ -674,25 +620,31 @@
 
             .stats-grid {
                 grid-template-columns: 1fr;
-                gap: 16px;
+                gap: 12px;
             }
 
             .stat-card {
-                padding: 20px;
+                padding: 12px;
             }
 
             .stat-icon {
-                width: 60px;
-                height: 60px;
-                font-size: 32px;
+                width: 40px;
+                height: 40px;
+                font-size: 24px;
             }
 
             .stat-number {
-                font-size: 28px;
+                font-size: 18px;
             }
 
             .stat-country {
-                font-size: 13px;
+                font-size: 10px;
+            }
+
+            .stat-meta {
+                flex-direction: row;
+                gap: 6px;
+                font-size: 8px;
             }
 
             .navigation-menu {
@@ -865,93 +817,57 @@
             <div class="stats-grid">
                 <!-- Costa Rica Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">🇨🇷</div>
-                        <div class="stat-trend stable" id="trendCR">
-                            <span>━</span>
-                            <span>Estable</span>
-                        </div>
-                    </div>
+                    <div class="stat-icon">🇨🇷</div>
                     <div class="stat-content">
                         <div class="stat-country">Costa Rica</div>
-                        <p class="stat-label">USD → CRC</p>
                         <h3 class="stat-number" id="exchangeRateCR">₡506.99</h3>
+                        <p class="stat-label">USD → CRC</p>
                     </div>
                     <div class="stat-meta">
-                        <span class="stat-date">
-                            <span>🕐</span>
-                            <span id="dateCR">Cargando...</span>
-                        </span>
                         <span class="stat-source">BCCR</span>
+                        <span class="stat-date" id="dateCR">Cargando...</span>
                     </div>
                 </div>
 
                 <!-- Honduras Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">🇭🇳</div>
-                        <div class="stat-trend stable" id="trendHN">
-                            <span>━</span>
-                            <span>Estable</span>
-                        </div>
-                    </div>
+                    <div class="stat-icon">🇭🇳</div>
                     <div class="stat-content">
                         <div class="stat-country">Honduras</div>
-                        <p class="stat-label">USD → HNL</p>
                         <h3 class="stat-number" id="exchangeRateHN">L24.50</h3>
+                        <p class="stat-label">USD → HNL</p>
                     </div>
                     <div class="stat-meta">
-                        <span class="stat-date">
-                            <span>🕐</span>
-                            <span id="dateHN">Cargando...</span>
-                        </span>
                         <span class="stat-source">SAP</span>
+                        <span class="stat-date" id="dateHN">Cargando...</span>
                     </div>
                 </div>
 
                 <!-- Guatemala Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">🇬🇹</div>
-                        <div class="stat-trend stable" id="trendGT">
-                            <span>━</span>
-                            <span>Estable</span>
-                        </div>
-                    </div>
+                    <div class="stat-icon">🇬🇹</div>
                     <div class="stat-content">
                         <div class="stat-country">Guatemala</div>
-                        <p class="stat-label">USD → GTQ</p>
                         <h3 class="stat-number" id="exchangeRateGT">Q7.85</h3>
+                        <p class="stat-label">USD → GTQ</p>
                     </div>
                     <div class="stat-meta">
-                        <span class="stat-date">
-                            <span>🕐</span>
-                            <span id="dateGT">Cargando...</span>
-                        </span>
                         <span class="stat-source">SAP</span>
+                        <span class="stat-date" id="dateGT">Cargando...</span>
                     </div>
                 </div>
 
                 <!-- Panama Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">🇵🇦</div>
-                        <div class="stat-trend stable" id="trendPA">
-                            <span>━</span>
-                            <span>Fijo</span>
-                        </div>
-                    </div>
+                    <div class="stat-icon">🇵🇦</div>
                     <div class="stat-content">
                         <div class="stat-country">Panamá</div>
-                        <p class="stat-label">USD → PAB</p>
                         <h3 class="stat-number" id="exchangeRatePA">B/.1.00</h3>
+                        <p class="stat-label">USD → PAB</p>
                     </div>
                     <div class="stat-meta">
-                        <span class="stat-date">
-                            <span>🕐</span>
-                            <span id="datePA">Dolarizado</span>
-                        </span>
                         <span class="stat-source">SAP</span>
+                        <span class="stat-date" id="datePA">Dolarizado</span>
                     </div>
                 </div>
             </div>
@@ -1170,7 +1086,7 @@
                 if (dateEl) {
                     const now = new Date();
                     const timeStr = now.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
-                    dateEl.textContent = `Hoy ${timeStr}`;
+                    dateEl.textContent = timeStr;
                 }
             } catch (error) {
                 console.log('Exchange rate fetch failed, using cached value');
@@ -1215,7 +1131,7 @@
                         }
                         const dateHN = document.getElementById('dateHN');
                         if (dateHN) {
-                            dateHN.textContent = `Hoy ${timeStr}`;
+                            dateHN.textContent = timeStr;
                         }
                     }
 
@@ -1228,7 +1144,7 @@
                         }
                         const dateGT = document.getElementById('dateGT');
                         if (dateGT) {
-                            dateGT.textContent = `Hoy ${timeStr}`;
+                            dateGT.textContent = timeStr;
                         }
                     }
 
@@ -1241,7 +1157,7 @@
                         }
                         const datePA = document.getElementById('datePA');
                         if (datePA) {
-                            datePA.textContent = `Hoy ${timeStr}`;
+                            datePA.textContent = timeStr;
                         }
                     }
                 }
