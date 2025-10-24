@@ -237,32 +237,85 @@
         }
 
         .stat-card {
-            background: var(--sap-white);
-            border-radius: 12px;
+            background: linear-gradient(135deg, var(--sap-white) 0%, #f8fbff 100%);
+            border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             display: flex;
-            align-items: center;
-            gap: 16px;
-            border: 1px solid var(--sap-border);
-            transition: all 0.3s ease;
+            flex-direction: column;
+            gap: 12px;
+            border: 2px solid transparent;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--sap-blue), var(--bluesystem-accent));
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,112,224,0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(0,112,224,0.2);
+            border-color: var(--sap-light-blue);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .stat-icon {
-            font-size: 32px;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--sap-light-blue), var(--sap-blue));
-            border-radius: 12px;
+            font-size: 40px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #E6F3FF 0%, #CCE5FF 100%);
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0,112,224,0.15);
+        }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-trend.up {
+            background: rgba(16, 126, 62, 0.1);
+            color: var(--sap-success);
+        }
+
+        .stat-trend.down {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--sap-error);
+        }
+
+        .stat-trend.stable {
+            background: rgba(106, 109, 112, 0.1);
+            color: var(--sap-medium-gray);
         }
 
         .stat-content {
@@ -270,19 +323,53 @@
         }
 
         .stat-number {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 32px;
+            font-weight: 800;
             color: var(--sap-dark-blue);
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            letter-spacing: -1px;
         }
 
         .stat-label {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--sap-medium-gray);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .stat-country {
+            font-size: 14px;
+            color: var(--sap-text);
             font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .stat-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .stat-date {
+            font-size: 11px;
+            color: var(--sap-medium-gray);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-source {
+            font-size: 10px;
+            color: var(--sap-medium-gray);
+            background: rgba(0,0,0,0.03);
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-weight: 600;
         }
 
         /* Section Headers */
@@ -586,7 +673,26 @@
             }
 
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .stat-card {
+                padding: 20px;
+            }
+
+            .stat-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 32px;
+            }
+
+            .stat-number {
+                font-size: 28px;
+            }
+
+            .stat-country {
+                font-size: 13px;
             }
 
             .navigation-menu {
@@ -752,40 +858,100 @@
         <!-- Grid de Módulos -->
         <!-- Stats Cards -->
         <section class="stats-section fade-in" style="animation-delay: 0.1s">
+            <div class="section-header" style="margin-bottom: 24px;">
+                <h2 class="section-title">💱 Tipos de Cambio en Tiempo Real</h2>
+                <p class="section-subtitle">Actualización automática cada 15 minutos</p>
+            </div>
             <div class="stats-grid">
                 <!-- Costa Rica Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-icon">🇨🇷</div>
+                    <div class="stat-card-header">
+                        <div class="stat-icon">🇨🇷</div>
+                        <div class="stat-trend stable" id="trendCR">
+                            <span>━</span>
+                            <span>Estable</span>
+                        </div>
+                    </div>
                     <div class="stat-content">
+                        <div class="stat-country">Costa Rica</div>
+                        <p class="stat-label">USD → CRC</p>
                         <h3 class="stat-number" id="exchangeRateCR">₡506.99</h3>
-                        <p class="stat-label">USD/CRC</p>
+                    </div>
+                    <div class="stat-meta">
+                        <span class="stat-date">
+                            <span>🕐</span>
+                            <span id="dateCR">Cargando...</span>
+                        </span>
+                        <span class="stat-source">BCCR</span>
                     </div>
                 </div>
 
                 <!-- Honduras Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-icon">🇭🇳</div>
+                    <div class="stat-card-header">
+                        <div class="stat-icon">🇭🇳</div>
+                        <div class="stat-trend stable" id="trendHN">
+                            <span>━</span>
+                            <span>Estable</span>
+                        </div>
+                    </div>
                     <div class="stat-content">
+                        <div class="stat-country">Honduras</div>
+                        <p class="stat-label">USD → HNL</p>
                         <h3 class="stat-number" id="exchangeRateHN">L24.50</h3>
-                        <p class="stat-label">USD/HNL</p>
+                    </div>
+                    <div class="stat-meta">
+                        <span class="stat-date">
+                            <span>🕐</span>
+                            <span id="dateHN">Cargando...</span>
+                        </span>
+                        <span class="stat-source">SAP</span>
                     </div>
                 </div>
 
                 <!-- Guatemala Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-icon">🇬🇹</div>
+                    <div class="stat-card-header">
+                        <div class="stat-icon">🇬🇹</div>
+                        <div class="stat-trend stable" id="trendGT">
+                            <span>━</span>
+                            <span>Estable</span>
+                        </div>
+                    </div>
                     <div class="stat-content">
+                        <div class="stat-country">Guatemala</div>
+                        <p class="stat-label">USD → GTQ</p>
                         <h3 class="stat-number" id="exchangeRateGT">Q7.85</h3>
-                        <p class="stat-label">USD/GTQ</p>
+                    </div>
+                    <div class="stat-meta">
+                        <span class="stat-date">
+                            <span>🕐</span>
+                            <span id="dateGT">Cargando...</span>
+                        </span>
+                        <span class="stat-source">SAP</span>
                     </div>
                 </div>
 
                 <!-- Panama Exchange Rate -->
                 <div class="stat-card">
-                    <div class="stat-icon">🇵🇦</div>
+                    <div class="stat-card-header">
+                        <div class="stat-icon">🇵🇦</div>
+                        <div class="stat-trend stable" id="trendPA">
+                            <span>━</span>
+                            <span>Fijo</span>
+                        </div>
+                    </div>
                     <div class="stat-content">
+                        <div class="stat-country">Panamá</div>
+                        <p class="stat-label">USD → PAB</p>
                         <h3 class="stat-number" id="exchangeRatePA">B/.1.00</h3>
-                        <p class="stat-label">USD/PAB</p>
+                    </div>
+                    <div class="stat-meta">
+                        <span class="stat-date">
+                            <span>🕐</span>
+                            <span id="datePA">Dolarizado</span>
+                        </span>
+                        <span class="stat-source">SAP</span>
                     </div>
                 </div>
             </div>
@@ -998,8 +1164,20 @@
                         exchangeRateEl.textContent = '₡506.99';
                     }
                 }
+
+                // Update date
+                const dateEl = document.getElementById('dateCR');
+                if (dateEl) {
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' });
+                    dateEl.textContent = `Hoy ${timeStr}`;
+                }
             } catch (error) {
                 console.log('Exchange rate fetch failed, using cached value');
+                const dateEl = document.getElementById('dateCR');
+                if (dateEl) {
+                    dateEl.textContent = 'Sin conexión';
+                }
             }
         }
 
@@ -1024,6 +1202,8 @@
                 });
 
                 const data = await response.json();
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
 
                 if (data.success && data.results) {
                     // Honduras
@@ -1032,6 +1212,10 @@
                         const hnEl = document.getElementById('exchangeRateHN');
                         if (hnEl) {
                             hnEl.textContent = `L${hnRate.toFixed(2)}`;
+                        }
+                        const dateHN = document.getElementById('dateHN');
+                        if (dateHN) {
+                            dateHN.textContent = `Hoy ${timeStr}`;
                         }
                     }
 
@@ -1042,6 +1226,10 @@
                         if (gtEl) {
                             gtEl.textContent = `Q${gtRate.toFixed(2)}`;
                         }
+                        const dateGT = document.getElementById('dateGT');
+                        if (dateGT) {
+                            dateGT.textContent = `Hoy ${timeStr}`;
+                        }
                     }
 
                     // Panama
@@ -1051,10 +1239,21 @@
                         if (paEl) {
                             paEl.textContent = `B/.${paRate.toFixed(2)}`;
                         }
+                        const datePA = document.getElementById('datePA');
+                        if (datePA) {
+                            datePA.textContent = `Hoy ${timeStr}`;
+                        }
                     }
                 }
             } catch (error) {
                 console.log('Multi-country exchange rates fetch failed, using cached values', error);
+                // Update error states
+                ['dateHN', 'dateGT', 'datePA'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && el.textContent === 'Cargando...') {
+                        el.textContent = 'Sin datos';
+                    }
+                });
             }
         }
 
