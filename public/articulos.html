@@ -1191,10 +1191,10 @@
                                 // NUEVA REGLA: Fila ROJA si stock está fuera del rango, VERDE si está dentro del rango
                                 // Fuera de rango: Stock >= Máximo O Stock < Mínimo
                                 const isOutOfRange = (maxStock > 0 && stockValue >= maxStock) || (minStock > 0 && stockValue < minStock);
-                                const rowStyle = isOutOfRange ? 'background-color: #ffebee !important;' : 'background-color: #e8f5e9 !important;'; // Rojo fuera de rango, verde dentro del rango
+                                const rowStyle = isOutOfRange ? 'background-color: #f8d7da !important;' : 'background-color: #d4edda !important;'; // Rojo corporativo PDF, verde corporativo Excel
 
                                 // Color de texto para el stock según si está fuera de rango
-                                const stockColor = isOutOfRange ? 'color: #c62828;' : 'color: #2e7d32;';
+                                const stockColor = isOutOfRange ? 'color: #dc3545; font-weight: 700;' : 'color: #28a745; font-weight: 700;';
 
                                 // Título con detalles del almacén para hover
                                 const warehouseTitle = warehouseExists
