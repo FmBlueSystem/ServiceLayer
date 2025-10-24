@@ -631,7 +631,7 @@
                 <form class="search-form" id="searchForm">
                     <div class="form-group">
                         <label class="form-label">Código de Artículo</label>
-                        <input type="text" class="form-control" id="itemCode" placeholder="ART-*">
+                        <input type="text" class="form-control" id="itemCode" placeholder="ART-*" onkeypress="if(event.key === 'Enter') ejecutarBusqueda()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Descripción</label>
