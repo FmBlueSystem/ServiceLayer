@@ -443,31 +443,7 @@
         <div class="bluesystem-footer">BlueSystemIO</div>
     </div>
 
-    <!-- Emergency skip button -->
-    <div style="position: fixed; top: 10px; right: 10px; z-index: 10001;">
-        <button onclick="forceShowLogin()" style="
-            background: rgba(255,255,255,0.8); 
-            border: 1px solid #ccc; 
-            padding: 5px 10px; 
-            border-radius: 3px; 
-            font-size: 10px; 
-            cursor: pointer;
-            color: #666;
-        ">Skip Splash</button>
-    </div>
-
     <script>
-        // Force show login (emergency function)
-        function forceShowLogin() {
-            const splash = document.getElementById('splashScreen');
-            const loginContainer = document.getElementById('loginContainer');
-            
-            if (splash) splash.classList.add('hidden');
-            document.body.classList.remove('splash-active');
-            if (loginContainer) loginContainer.classList.add('show');
-            
-            console.log('Emergency login activation');
-        }
 
         // Show alert message
         function showAlert(message, type = 'error') {
