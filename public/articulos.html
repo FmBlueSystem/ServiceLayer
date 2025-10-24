@@ -94,8 +94,8 @@
             transition: all 0.2s ease;
         }
 
-        /* Filas alternadas con colores de la paleta SAP */
-        .sap-table tbody tr:nth-child(odd) {
+        /* Filas alternadas con colores de la paleta SAP - DESHABILITADO */
+        /* .sap-table tbody tr:nth-child(odd) {
             background: var(--sap-white);
         }
 
@@ -109,16 +109,16 @@
 
         .sap-table tbody tr:nth-child(even) td {
             background: var(--sap-light-blue);
-        }
+        } */
 
-        /* Hover effect simplificado usando paleta SAP */
-        .sap-table tbody tr:hover {
+        /* Hover effect simplificado usando paleta SAP - DESHABILITADO */
+        /* .sap-table tbody tr:hover {
             background: var(--sap-gray);
         }
 
         .sap-table tbody tr:hover td {
             background: var(--sap-gray) !important;
-        }
+        } */
 
         /* Columnas específicas - Estilo simplificado */
         .sap-table th:nth-child(1), .sap-table td:nth-child(1) {
@@ -128,7 +128,6 @@
 
         .sap-table td:nth-child(1) {
             font-weight: 600;
-            color: #32363A;
         }
 
         .sap-table th:nth-child(2), .sap-table td:nth-child(2) {
@@ -138,7 +137,6 @@
 
         .sap-table td:nth-child(2) {
             font-weight: 600;
-            color: #32363A;
         }
 
         .sap-table th:nth-child(3), .sap-table td:nth-child(3) {
@@ -147,7 +145,6 @@
 
         .sap-table td:nth-child(3) {
             font-weight: 500;
-            color: #32363A;
         }
 
         .sap-table th:nth-child(4), .sap-table td:nth-child(4) {
@@ -157,7 +154,6 @@
 
         .sap-table td:nth-child(4) {
             font-weight: 500;
-            color: #32363A;
         }
 
         .sap-table th:nth-child(5), .sap-table td:nth-child(5) {
@@ -167,7 +163,6 @@
 
         .sap-table td:nth-child(5) {
             font-weight: 600;
-            color: #32363A;
         }
 
         .sap-table th:nth-child(6), .sap-table td:nth-child(6) {
@@ -177,7 +172,6 @@
 
         .sap-table td:nth-child(6) {
             font-weight: 500;
-            color: #6c757d;
         }
 
         /* Banderas de países - estilo simplificado */
@@ -186,7 +180,6 @@
             align-items: center;
             gap: 6px;
             font-weight: 600;
-            color: #32363A;
         }
 
         /* Animación para las filas - simplificada */
@@ -218,7 +211,8 @@
             text-align: center !important;
         }
 
-        .stock-available {
+        /* Indicadores de stock deshabilitados - se usan colores de fila completa */
+        /* .stock-available {
             background: #e8f5e9 !important;
             color: #2e7d32 !important;
         }
@@ -226,10 +220,10 @@
         .stock-zero {
             background: #ffebee !important;
             color: #c62828 !important;
-        }
+        } */
 
-        /* Efectos hover para stock - más visibles */
-        .sap-table tbody tr:hover .stock-available {
+        /* Efectos hover para stock - DESHABILITADO */
+        /* .sap-table tbody tr:hover .stock-available {
             background: #4caf50 !important;
             color: white !important;
             font-weight: 700;
@@ -239,7 +233,7 @@
             background: #e57373 !important;
             color: white !important;
             font-weight: 700;
-        }
+        } */
 
         /* Efectos de entrada simplificados */
         .sap-table tbody tr {
@@ -1212,10 +1206,11 @@
                                     }
                                 }
 
-                                const rowStyle = isOutOfRange ? 'background-color: #FADBD8 !important;' : 'background-color: #d4edda !important;'; // Rojo claro derivado del botón PDF (#E74C3C → #FADBD8), verde del botón Excel
+                                const rowStyle = isOutOfRange ? 'background-color: #E74C3C !important;' : 'background-color: #107E3E !important;'; // Rojo del botón PDF, verde del botón Excel
 
-                                // Color de texto para el stock
-                                const stockColor = isOutOfRange ? 'color: #E74C3C; font-weight: 700;' : 'color: #28a745; font-weight: 700;';
+                                // Color de texto blanco para todas las celdas
+                                const textStyle = 'color: white;';
+                                const stockColor = 'color: white; font-weight: 700;';
 
                                 // Título con detalles del almacén para hover
                                 const warehouseTitle = warehouseExists
@@ -1227,17 +1222,17 @@
 
                                 return `
                                 <tr${!warehouseExists ? ' style="opacity: 0.7;"' : ''}>
-                                    <td style="${rowStyle}"><span class="country-flag">${item.flag || '🏢'} ${item.country || 'N/A'}</span></td>
-                                    <td class="item-code" style="${rowStyle}">${item.itemCode || 'N/A'}</td>
-                                    <td class="item-description" style="${rowStyle}">${item.itemName || item.description || 'N/A'}</td>
-                                    <td class="part-number" style="${rowStyle}">${item.numeroParte || 'Sin número de parte'}</td>
-                                    <td class="stock-cell" style="${rowStyle} ${stockColor} font-weight: 600;" title="${warehouseTitle}">
+                                    <td style="${rowStyle} ${textStyle}"><span class="country-flag">${item.flag || '🏢'} ${item.country || 'N/A'}</span></td>
+                                    <td class="item-code" style="${rowStyle} ${textStyle}">${item.itemCode || 'N/A'}</td>
+                                    <td class="item-description" style="${rowStyle} ${textStyle}">${item.itemName || item.description || 'N/A'}</td>
+                                    <td class="part-number" style="${rowStyle} ${textStyle}">${item.numeroParte || 'Sin número de parte'}</td>
+                                    <td class="stock-cell" style="${rowStyle} ${stockColor}" title="${warehouseTitle}">
                                         ${warehouseWarning}${stockIcon} ${stockValue} ${unit}
                                     </td>
-                                    <td class="stock-cell" style="${rowStyle} text-align: center;">
+                                    <td class="stock-cell" style="${rowStyle} ${textStyle} text-align: center;">
                                         ${item.minStock || 0} ${unit}
                                     </td>
-                                    <td class="stock-cell" style="${rowStyle} text-align: center;">
+                                    <td class="stock-cell" style="${rowStyle} ${textStyle} text-align: center;">
                                         ${item.maxStock || 0} ${unit}
                                     </td>
                                 </tr>

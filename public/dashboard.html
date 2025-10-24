@@ -41,6 +41,15 @@
             min-height: 100vh;
         }
 
+        /* Twemoji emoji size control */
+        img.emoji {
+            height: 1em;
+            width: 1em;
+            margin: 0 0.05em 0 0.1em;
+            vertical-align: -0.1em;
+            display: inline-block;
+        }
+
         /* Header Principal */
         .main-header {
             background: linear-gradient(135deg, var(--sap-dark-blue) 0%, var(--sap-blue) 100%);
@@ -735,6 +744,9 @@
             margin-top: 4px;
         }
     </style>
+
+    <!-- Twemoji para renderizar emojis de banderas -->
+    <script src="https://cdn.jsdelivr.net/npm/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <!-- Header Principal -->
@@ -1274,6 +1286,11 @@
 
                 navMenu.appendChild(navItem);
             });
+
+            // Re-renderizar emojis con Twemoji en el menú de navegación
+            if (typeof twemoji !== 'undefined') {
+                twemoji.parse(navMenu);
+            }
         }
 
         // Build module cards from pages
@@ -1307,6 +1324,11 @@
 
                 modulesGrid.appendChild(moduleCard);
             });
+
+            // Re-renderizar emojis con Twemoji después de agregar tarjetas dinámicas
+            if (typeof twemoji !== 'undefined') {
+                twemoji.parse(modulesGrid);
+            }
         }
 
         // Navigate to a page
@@ -1392,6 +1414,14 @@
                 }
             } catch (error) {
                 console.error('Error verificando conexiones:', error);
+            } finally {
+                // Re-renderizar emojis después de actualizar conexiones
+                if (typeof twemoji !== 'undefined') {
+                    const connectionGrid = document.getElementById('connectionGrid');
+                    if (connectionGrid) {
+                        twemoji.parse(connectionGrid);
+                    }
+                }
             }
         }
 
@@ -1444,6 +1474,15 @@
 
             // Update connections every 30 seconds
             setInterval(verificarConexiones, 30000);
+
+            // Inicializar Twemoji para renderizar emojis de banderas
+            if (typeof twemoji !== 'undefined') {
+                twemoji.parse(document.body, {
+                    folder: 'svg',
+                    ext: '.svg',
+                    base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/'
+                });
+            }
 
             console.log('Dashboard loaded successfully');
         });
