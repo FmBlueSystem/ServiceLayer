@@ -635,11 +635,11 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Descripción</label>
-                        <input type="text" class="form-control" id="description" placeholder="*Producto*">
+                        <input type="text" class="form-control" id="description" placeholder="*Producto*" onkeypress="if(event.key === 'Enter') ejecutarBusqueda()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Número de Parte</label>
-                        <input type="text" class="form-control" id="numeroParte" placeholder="NP-*">
+                        <input type="text" class="form-control" id="numeroParte" placeholder="NP-*" onkeypress="if(event.key === 'Enter') ejecutarBusqueda()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Compañía</label>
