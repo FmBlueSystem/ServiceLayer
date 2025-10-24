@@ -2007,7 +2007,7 @@
             loadingElement.style.display = show ? 'block' : 'none';
         }
 
-        function showAlert(message, type = 'info') {
+        function showAlert(message, type = 'info', duration = null) {
             const alert = document.getElementById('alert');
             alert.className = `alert ${type}`;
             alert.textContent = message;
@@ -2016,10 +2016,27 @@
             // Scroll to alert
             alert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-            if (type !== 'error') {
+            // Determinar duración del mensaje
+            let displayDuration = duration;
+            if (displayDuration === null) {
+                // Duración por defecto según el tipo
+                if (type === 'success' && message.includes('creada exitosamente')) {
+                    // Mensajes de éxito de creación: 15 segundos
+                    displayDuration = 15000;
+                } else if (type === 'error') {
+                    // Errores: no se ocultan automáticamente
+                    displayDuration = 0;
+                } else {
+                    // Otros mensajes: 5 segundos
+                    displayDuration = 5000;
+                }
+            }
+
+            // Ocultar automáticamente si la duración es > 0
+            if (displayDuration > 0) {
                 setTimeout(() => {
                     hideAlert();
-                }, 5000);
+                }, displayDuration);
             }
         }
 
