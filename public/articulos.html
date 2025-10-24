@@ -1188,12 +1188,30 @@
 
                                 const unit = item.unit || 'uni';
 
-                                // NUEVA REGLA: Fila ROJA si stock está fuera del rango, VERDE si está dentro del rango
-                                // Fuera de rango: Stock >= Máximo O Stock < Mínimo
-                                const isOutOfRange = (maxStock > 0 && stockValue >= maxStock) || (minStock > 0 && stockValue < minStock);
+                                // NUEVA REGLA CORREGIDA:
+                                // 1. Si stock = 0 → ROJO (sin importar mínimo/máximo)
+                                // 2. Si stock > 0 y está fuera de rango configurado → ROJO
+                                // 3. Si stock > 0 y está dentro de rango (o no hay rango) → VERDE
+
+                                let isOutOfRange = false;
+
+                                if (stockValue === 0) {
+                                    // Sin stock = siempre rojo
+                                    isOutOfRange = true;
+                                } else if (stockValue > 0) {
+                                    // Con stock, verificar si está fuera de rango configurado
+                                    if (maxStock > 0 && stockValue >= maxStock) {
+                                        // Stock alcanzó o superó el máximo
+                                        isOutOfRange = true;
+                                    } else if (minStock > 0 && stockValue < minStock) {
+                                        // Stock está por debajo del mínimo
+                                        isOutOfRange = true;
+                                    }
+                                }
+
                                 const rowStyle = isOutOfRange ? 'background-color: #f8d7da !important;' : 'background-color: #d4edda !important;'; // Rojo corporativo PDF, verde corporativo Excel
 
-                                // Color de texto para el stock según si está fuera de rango
+                                // Color de texto para el stock
                                 const stockColor = isOutOfRange ? 'color: #dc3545; font-weight: 700;' : 'color: #28a745; font-weight: 700;';
 
                                 // Título con detalles del almacén para hover
