@@ -1104,7 +1104,9 @@
                         </div>
                     `;
                     document.getElementById('pagination').style.display = 'none';
-                    document.getElementById('resultsHeader').textContent = '📋 Lista de Artículos (0 entradas)';
+                    const header1 = document.getElementById('resultsHeader');
+                    header1.textContent = '📋 Lista de Artículos (0 entradas)';
+                    header1.style.cssText = 'background: linear-gradient(135deg, #28a745 0%, #20c997 50%, #dc3545 100%); color: white; font-weight: 700; font-size: 16px; text-shadow: 0 1px 3px rgba(0,0,0,0.3);';
                 } else {
                     displayResults(allResults);
                     calculateAndShowStockSummary(allResults);
@@ -1139,6 +1141,7 @@
 
             const header = document.getElementById('resultsHeader');
             header.textContent = `📋 Lista de Artículos (${results.length} entradas)`;
+            header.style.cssText = 'background: linear-gradient(135deg, #28a745 0%, #20c997 50%, #dc3545 100%); color: white; font-weight: 700; font-size: 16px; text-shadow: 0 1px 3px rgba(0,0,0,0.3);';
 
             if (results.length === 0) {
                 document.getElementById('resultsContainer').innerHTML = `
@@ -1362,7 +1365,9 @@
             `;
             document.getElementById('pagination').style.display = 'none';
             document.getElementById('stockSummary').style.display = 'none';
-            document.getElementById('resultsHeader').textContent = '📋 Lista de Artículos';
+            const headerClear = document.getElementById('resultsHeader');
+            headerClear.textContent = '📋 Lista de Artículos';
+            headerClear.style.cssText = 'background: linear-gradient(135deg, #28a745 0%, #20c997 50%, #dc3545 100%); color: white; font-weight: 700; font-size: 16px; text-shadow: 0 1px 3px rgba(0,0,0,0.3);';
         }
 
         // Show alert message
