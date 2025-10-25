@@ -636,6 +636,13 @@
                         <input type="text" class="form-control" id="numeroParte" placeholder="NP-*" onkeypress="if(event.key === 'Enter') ejecutarBusqueda()">
                     </div>
                     <div class="form-group">
+                        <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="onlyActiveItems" checked onchange="ejecutarBusqueda()" style="cursor: pointer; width: 16px; height: 16px;">
+                            <span>Solo artículos activos</span>
+                        </label>
+                        <small style="color: #6c757d; margin-left: 24px;">Desmarcar para incluir artículos inactivos</small>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Compañía</label>
                         <select class="form-control" id="company">
                             <option value="">Todas las Compañías</option>
@@ -926,6 +933,7 @@
             const description = document.getElementById('description').value;
             const numeroParte = document.getElementById('numeroParte').value;
             const company = document.getElementById('company').value;
+            const onlyActive = document.getElementById('onlyActiveItems').checked;
 
             // Get valid sessions
             const validSessions = getValidSessions();
@@ -992,6 +1000,7 @@
                                 itemCode: itemCode || undefined,
                                 itemName: description || undefined,
                                 numeroParte: numeroParte || undefined,
+                                onlyActive: onlyActive,
                                 limit: 50
                             }
                         };
@@ -1002,6 +1011,7 @@
                             itemCode: itemCode,
                             description: description,
                             numeroParte: numeroParte,
+                            onlyActive: onlyActive,
                             queryParams: queryParams
                         });
 
@@ -1091,10 +1101,67 @@
                 }
 
                 if (allResults.length === 0) {
+                    // Validar si hay artículos inactivos que coinciden con la búsqueda
+                    let inactiveItemsMessage = '';
+                    const hasSearchCriteria = itemCode || description || numeroParte;
+
+                    if (onlyActive && hasSearchCriteria) {
+                        // Hacer una búsqueda rápida sin el filtro de activos para verificar si existen artículos inactivos
+                        try {
+                            console.log('🔍 Verificando si hay artículos inactivos...');
+                            let inactiveCount = 0;
+
+                            for (const session of targetSessions) {
+                                try {
+                                    const checkParams = {
+                                        sessionId: session.sessionId,
+                                        companyDB: session.companyDB,
+                                        filters: {
+                                            itemCode: itemCode || undefined,
+                                            itemName: description || undefined,
+                                            numeroParte: numeroParte || undefined,
+                                            onlyActive: false, // Buscar TODOS (activos e inactivos)
+                                            limit: 50
+                                        }
+                                    };
+
+                                    const checkResponse = await fetchWithMultiSessionRenewal('/api/sap/items', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(checkParams)
+                                    });
+
+                                    const checkResult = await checkResponse.json();
+                                    if (checkResult.success && checkResult.data?.value) {
+                                        inactiveCount += checkResult.data.value.length;
+                                    }
+                                } catch (error) {
+                                    console.warn('Error checking inactive items:', error);
+                                }
+                            }
+
+                            if (inactiveCount > 0) {
+                                inactiveItemsMessage = `
+                                    <div style="margin-top: 16px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                                        <div style="color: #856404; font-weight: 600; margin-bottom: 4px;">
+                                            ⚠️ Se encontraron ${inactiveCount} artículo(s) inactivo(s)
+                                        </div>
+                                        <div style="color: #856404; font-size: 13px;">
+                                            Desmarque "Solo artículos activos" para verlos
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } catch (error) {
+                            console.error('Error al verificar artículos inactivos:', error);
+                        }
+                    }
+
                     document.getElementById('resultsContainer').innerHTML = `
                         <div class="loading">
-                            <div>📭 No se encontraron resultados</div>
+                            <div>📭 No se encontraron artículos activos</div>
                             <div>Intente modificar los criterios de búsqueda</div>
+                            ${inactiveItemsMessage}
                         </div>
                     `;
                     document.getElementById('pagination').style.display = 'none';

@@ -760,6 +760,15 @@ class SAPService {
 
       // Construir filtros OData
       let odataFilters = [];
+
+      // Filtro de artículos activos/inactivos
+      if (filters.onlyActive === true) {
+        // Solo artículos activos: Valid = 'tYES' (artículo válido/activo)
+        // En SAP Service Layer, tYES = activo, tNO = inactivo
+        odataFilters.push(`Valid eq 'tYES'`);
+      }
+      // Si onlyActive es false o no está definido, incluir todos (activos e inactivos)
+
       if (filters.itemCode) {
         // Para códigos con wildcards, usar contains
         // Si no tiene wildcards, usar búsqueda exacta o contains para mayor flexibilidad
@@ -801,6 +810,7 @@ class SAPService {
         odataFilters: odataFilters,
         hasNumeroParte: !!filters.numeroParte,
         numeroParteValue: filters.numeroParte,
+        onlyActive: filters.onlyActive,
         companyDB: headers.CompanyDB,
         actualFilterString: odataFilters.length > 0 ? odataFilters.join(' and ') : 'no filters'
       });
@@ -813,7 +823,7 @@ class SAPService {
       // InStock es el campo equivalente a OnHand de la tabla OITW
       const warehouseCode = filters.warehouseCode || '00'; // Permitir configurar el almacén, por defecto '00'
 
-      endpoint += `${separator}$select=ItemCode,ItemName,U_Cod_Proveedor,QuantityOnStock,ItemWarehouseInfoCollection`;
+      endpoint += `${separator}$select=ItemCode,ItemName,U_Cod_Proveedor,QuantityOnStock,Valid,ItemWarehouseInfoCollection`;
       endpoint += `&$top=${filters.limit || 50}&$skip=${filters.offset || 0}`;
 
       logger.info('Final endpoint before SAP API call', {
@@ -850,7 +860,9 @@ class SAPService {
           odataCount: data['@odata.count'],
           firstItemSample: data.value && data.value.length > 0 ? data.value[0] : 'no items',
           firstItemKeys: data.value && data.value.length > 0 ? Object.keys(data.value[0]) : 'no items',
-          hasWarehouseCollection: data.value && data.value.length > 0 && data.value[0].ItemWarehouseInfoCollection ? true : false
+          hasWarehouseCollection: data.value && data.value.length > 0 && data.value[0].ItemWarehouseInfoCollection ? true : false,
+          firstItemValidField: data.value && data.value.length > 0 ? data.value[0].Valid : 'no items',
+          firstItemCode: data.value && data.value.length > 0 ? data.value[0].ItemCode : 'no items'
         });
 
         // CORRECCIÓN: Extraer stock del almacén específico desde ItemWarehouseInfoCollection
