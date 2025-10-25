@@ -141,3 +141,15 @@ docker/ssl/*.crt
 *.p12
 *.pfx
 reset_password.sql
+
+# Database backups (exclude full database dumps, but allow config exports)
+database/backups/
+backups/
+*.dump
+*.backup
+
+# Screenshots and temporary images
+Capture*.PNG
+Capture*.png
+screenshot*.png
+screenshot*.PNG
